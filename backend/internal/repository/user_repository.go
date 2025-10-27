@@ -14,39 +14,31 @@ type UserRepository interface {
 	FindByID(id int) (*models.User, error)
 }
 
-// SQLiteUserRepository implementa UserRepository usando SQLite
-type SQLiteUserRepository struct {
+// PostgreSQLUserRepository implementa UserRepository usando PostgreSQL
+type PostgreSQLUserRepository struct {
 	db *sql.DB
 }
 
-// NewSQLiteUserRepository crea una nueva instancia
-func NewSQLiteUserRepository(db *sql.DB) *SQLiteUserRepository {
-	return &SQLiteUserRepository{db: db}
+// NewPostgreSQLUserRepository crea una nueva instancia
+func NewPostgreSQLUserRepository(db *sql.DB) *PostgreSQLUserRepository {
+	return &PostgreSQLUserRepository{db: db}
 }
 
 // Create inserta un nuevo usuario en la base de datos
-func (r *SQLiteUserRepository) Create(user *models.User) error {
+func (r *PostgreSQLUserRepository) Create(user *models.User) error {
 	query := `
 		INSERT INTO users (email, password, username, created_at)
-		VALUES (?, ?, ?, datetime('now'))
+		VALUES ($1, $2, $3, NOW())
+		RETURNING id
 	`
-	result, err := r.db.Exec(query, user.Email, user.Password, user.Username)
-	if err != nil {
-		return err
-	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	user.ID = int(id)
-	return nil
+	err := r.db.QueryRow(query, user.Email, user.Password, user.Username).Scan(&user.ID)
+	return err
 }
 
 // FindByEmail busca un usuario por email
-func (r *SQLiteUserRepository) FindByEmail(email string) (*models.User, error) {
-	query := `SELECT id, email, password, username, created_at FROM users WHERE email = ?`
+func (r *PostgreSQLUserRepository) FindByEmail(email string) (*models.User, error) {
+	query := `SELECT id, email, password, username, created_at FROM users WHERE email = $1`
 
 	user := &models.User{}
 	err := r.db.QueryRow(query, email).Scan(
@@ -68,8 +60,8 @@ func (r *SQLiteUserRepository) FindByEmail(email string) (*models.User, error) {
 }
 
 // FindByID busca un usuario por ID
-func (r *SQLiteUserRepository) FindByID(id int) (*models.User, error) {
-	query := `SELECT id, email, password, username, created_at FROM users WHERE id = ?`
+func (r *PostgreSQLUserRepository) FindByID(id int) (*models.User, error) {
+	query := `SELECT id, email, password, username, created_at FROM users WHERE id = $1`
 
 	user := &models.User{}
 	err := r.db.QueryRow(query, id).Scan(

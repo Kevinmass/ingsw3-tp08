@@ -13,16 +13,21 @@ import (
 )
 
 func main() {
-	// Inicializar base de datos
-	db, err := database.InitDB("./database.db")
+	// Inicializar base de datos PostgreSQL
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL environment variable is required")
+	}
+
+	db, err := database.InitDB(databaseURL)
 	if err != nil {
 		log.Fatal("Error al inicializar la base de datos:", err)
 	}
 	defer db.Close()
 
 	// Crear repositorios
-	userRepo := repository.NewSQLiteUserRepository(db)
-	postRepo := repository.NewSQLitePostRepository(db)
+	userRepo := repository.NewPostgreSQLUserRepository(db)
+	postRepo := repository.NewPostgreSQLPostRepository(db)
 
 	// Crear servicios
 	authService := services.NewAuthService(userRepo)

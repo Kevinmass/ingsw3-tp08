@@ -16,13 +16,10 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Enable CGO for sqlite3
-ENV CGO_ENABLED=1
+# Build settings for PostgreSQL
+ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
-
-# Install gcc for CGO
-RUN apk add --no-cache gcc musl-dev
 
 # Copy source code
 COPY . .
