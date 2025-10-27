@@ -1,9 +1,26 @@
 import axios from 'axios';
 import { Post, CreatePostRequest, Comment, CreateCommentRequest } from '../types';
 
-// Relative URLs work in deployment (same domain), localhost for development
-// In Render, frontend and backend are on the same domain when using proximity
-const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+// Configure backend URLs for each environment
+const getApiBaseUrl = () => {
+  if (window.location.hostname === 'localhost') {
+    return 'http://localhost:8080';
+  }
+
+  // For Render production, use the backend service URL
+  // Replace with your actual backend URL
+  const hostname = window.location.hostname;
+  if (hostname.includes('front-prod')) {
+    return 'https://ingsw3-back-prod.onrender.com';
+  } else if (hostname.includes('front-qa')) {
+    return 'https://ingsw3-back-qa.onrender.com';
+  }
+
+  // Fallback for other environments
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 const API_URL = `${API_BASE_URL}/api/posts`;
 
 export const postService = {
