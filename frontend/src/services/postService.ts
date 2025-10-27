@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { Post, CreatePostRequest, Comment, CreateCommentRequest } from '../types';
 
-const API_URL = 'http://localhost:8080/api/posts';
+// Relative URLs work in deployment (same domain), localhost for development
+// In Render, frontend and backend are on the same domain when using proximity
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+const API_URL = `${API_BASE_URL}/api/posts`;
 
 export const postService = {
   // Obtener todos los posts
