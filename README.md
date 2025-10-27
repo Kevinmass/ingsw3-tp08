@@ -1,10 +1,10 @@
-# TP06 - Pruebas Unitarias
+# TP08 - Sistema de Integración y Despliegue
 
-**Materia:** Ingeniería de Software 3  
-**Alumno:** Octavio Carpineti - Kevin Massholder  
+**Materia:** Ingeniería de Software 3
+**Alumno:** Octavio Carpineti - Kevin Massholder
 **Año:** 2025
 
-Mini red social con suite completa de pruebas unitarias (42 tests), mocking de dependencias externas y CI/CD automático.
+Mini red social completa con PostgreSQL, entornos QA/PROD separados, Railway databases, Render deployment, y suite completa de pruebas unitarias (42 tests).
 
 ---
 
@@ -26,8 +26,9 @@ Mini red social con suite completa de pruebas unitarias (42 tests), mocking de d
 
 ### Backend
 - **Go 1.21+**
-- **SQLite** (base de datos)
+- **PostgreSQL** (Railway cloud databases)
 - **Gorilla Mux** (routing)
+- **lib/pq** (PostgreSQL driver)
 - **testify** (testing + mocking)
 
 ### Frontend
@@ -35,46 +36,91 @@ Mini red social con suite completa de pruebas unitarias (42 tests), mocking de d
 - **Axios** (HTTP client)
 - **Jest** + **React Testing Library** (testing)
 
-### DevOps
+### Infraestructura
+- **Railway** (PostgreSQL databases)
+- **Render** (deployment platform)
 - **GitHub Actions** (CI/CD)
-- **Docker** (futuro TP08)
+- **Docker** (containerization)
 
 ---
 
-## 🏗️ Arquitectura
+## 🚀 Despliegue y Arquitectura
+
+### Entornos de Despliegue
+```
+┌─────────────────┐    ┌─────────────────┐
+│   Frontend QA   │    │  Frontend PROD  │
+│ Render Service  │    │ Render Service  │
+└─────────┬───────┘    └───────┬─────────┘
+          │                    │
+          │                    │
+          ▼                    ▼
+┌─────────────────┐    ┌─────────────────┐
+│   Backend QA    │    │  Backend PROD   │
+│ Render Service  │    │ Render Service  │
+│                 │    │                 │
+│ DATABASE_URL →  │    │ DATABASE_URL →  │
+└─────────┬───────┘    └───────┬─────────┘
+          │                    │
+          ▼                    ▼
+┌─────────────────┐    ┌─────────────────┐
+│ PostgreSQL QA   │    │ PostgreSQL PROD │
+│   Railway DB    │    │   Railway DB    │
+└─────────────────┘    └─────────────────┘
+```
+
+### Arquitectura por Capas
 
 ```
-┌─────────────┐      HTTP      ┌──────────────┐
-│   Frontend  │ ←────────────→ │   Backend    │
-│   (React)   │                │     (Go)     │
-└─────────────┘                └──────────────┘
-                                       ↓
-                               ┌──────────────┐
-                               │   SQLite DB  │
-                               └──────────────┘
+Frontend (React)     →      Backend (Go)
+──────────────────────     ────────────────────
+Login/PostList         ┌─►  Handlers     (HTTP handlers)
+React Components       │    ├── auth_handler.go
+API Calls (axios)      │    └── post_handler.go
+                        │
+                        │    Services     (business logic)
+                        ├── auth_service.go      ───┐
+                        └── post_service.go           │
+                                                      │ MOCK repository
+                        Repository   (data access)   │ (for testing)
+                        ├── user_repository.go ──┐   │
+                        └── post_repository.go ──┐┼───┘
+                                                  │
+PSQL Repository                  PostgreSQL
+(SELECT/INSERT/UPDATE)          (Railway Cloud)
 ```
 
-### Capas del Backend
+### Configuración de Base de Datos
 
-```
-Handlers     ← Controladores HTTP (reciben requests)
-    ↓
-Services     ← Lógica de negocio (validaciones, reglas)
-    ↓
-Repository   ← Acceso a datos (SQL)
-    ↓
-Database     ← SQLite
-```
+**Esquema PostgreSQL:**
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    username TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-### Testing Strategy
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-```
-PRODUCCIÓN                      TESTING
-─────────────────────────────────────────────────
-Repository (SQLite)       →     Mock Repository
-HTTP (axios)              →     Mock axios
-                          
-Resultado: Tests rápidos, aislados y reproducibles
+CREATE TABLE comments (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_comments_post_id ON comments(post_id);
+CREATE INDEX idx_comments_user_id ON comments(user_id);
 ```
 
 ---
@@ -82,81 +128,172 @@ Resultado: Tests rápidos, aislados y reproducibles
 ## ✨ Funcionalidades
 
 ### Autenticación
-- ✅ Registro de usuarios
+- ✅ Registro de usuarios con validación
 - ✅ Login con email/password
-- ✅ Validaciones (email, password, username)
+- ✅ JWT-like session handling (headers)
+- ✅ CORS configurado para cross-origin
 
-### Posts
-- ✅ Crear post (título + contenido)
-- ✅ Listar todos los posts
-- ✅ Ver detalle de un post
-- ✅ Eliminar post (solo el autor)
+### Posts y Comentarios
+- ✅ Crear post con título y contenido
+- ✅ Listar posts de todos los usuarios
+- ✅ Ver detalle de post con comentarios
+- ✅ Eliminar post (solo autor)
+- ✅ Comentar en posts
+- ✅ Eliminar comentarios (solo autor)
 
-### Comentarios
-- ✅ Agregar comentario a un post
-- ✅ Listar comentarios
-- ✅ Eliminar comentario (solo el autor)
+### Validaciones de Negocio
+- 🔒 **Autorización**: Solo el autor puede eliminar posts/comentarios
+- ✉️ **Email**: Validación de formato y unicidad
+- 🔑 **Password**: Mínimo 6 caracteres
+- 📝 **Posts**: Título mínimo 3 caracteres
+- 🗃️ **Base de Datos**: Constraints a nivel DB (foreign keys, serial IDs)
 
-### Reglas de Negocio (testeadas)
-- 🔒 Solo el autor puede eliminar su post
-- 🔒 Solo el autor puede eliminar su comentario
-- ✉️ Email debe ser válido y único
-- 🔑 Password mínimo 6 caracteres
-- 📝 Título de post mínimo 3 caracteres
+### Separación de QA/PROD
+- ✅ **Bases de datos independientes**: QA y PROD no comparten datos
+- ✅ **URLs separadas**: Cada entorno tiene su propia URL
+- ✅ **Variables de entorno**: Configuración por entorno
 
 ---
 
 ## 📦 Prerequisitos
 
-### Instalación de Herramientas
+### Cuentas y Servicios Externos
+
+#### Railway (Base de Datos PostgreSQL)
+1. Registrarse en [Railway.app](https://railway.app)
+2. Agregar método de pago (requerido para PostgreSQL)
+3. Crear proyecto: **ingsw3-tp08-qa** y **ingsw3-tp08-prod**
+
+#### Render (Despliegue)
+1. Registrarse en [Render.com](https://render.com)
+2. Conectar repositorio de GitHub
+3. Crear servicios separados para QA y PROD
+
+### Instalación de Herramientas Locales
 
 #### Go (Backend)
 ```bash
-# Verificar instalación
 go version  # Debe ser 1.21+
-
-# Si no está instalado: https://go.dev/dl/
 ```
 
 #### Node.js (Frontend)
 ```bash
-# Verificar instalación
 node --version  # Debe ser 18+
 npm --version
-
-# Si no está instalado: https://nodejs.org/
 ```
 
 #### Git
 ```bash
 git --version
-
-# Si no está instalado: https://git-scm.com/
 ```
 
 ---
 
-## 🚀 Instalación
+## 🗄️ Configuración de Base de Datos (Railway)
 
-### 1. Clonar el repositorio
+### 1. Crear Base de Datos QA
+1. **Railway Dashboard** → **New Project** → **Provision PostgreSQL**
+2. Nombre: `ingsw3-tp08-qa`
+3. Plan: **Hobby** (512MB RAM, 1GB storage)
+4. Crear y esperar configuración (~2-3 minutos)
 
+### 2. Crear Base de Datos PROD
+1. Repetir proceso para PROD
+2. Nombre: `ingsw3-tp08-prod`
+3. Plan: **Hobby** (libre para uso básico)
+
+### 3. Configurar Esquema
+**Para cada base de datos:**
+1. Ir a → **Variables** → **Query** tab
+2. Ejecutar el esquema de arriba (users, posts, comments)
+
+### 4. Obtener URLs de Conexión
+**Para cada DB:**
+- Ir a **"Variables"** tab
+- Copiar **`DATABASE_URL`** value
+
+Ejemplo: `postgresql://postgres:abcd1234@us-west1-postgres-xyz.railway.app:5432/railway`
+
+---
+
+## 🎪 Despliegue en Render
+
+### 1. Servicios Backend (QA y PROD)
+
+#### Backend QA:
+1. **Render Dashboard** → **New** → **Web Service**
+2. **Conectar GitHub repo**: `Kevinmass/IngSWIII-TP08`
+3. **Configurar servicio:**
+   - **Name**: `ingsw3-back-qa`
+   - **Root Directory**: `./backend`
+   - **Environment**: `Go`
+   - **Go Version**: `1.21`
+   - **Build Command**: `go mod download`
+   - **Start Command**: `go run cmd/api/main.go`
+
+4. **Environment Variables:**
+   - **DATABASE_URL**: `[tu QA Railway DATABASE_URL]`
+
+#### Backend PROD:
+- Repetir con nombre: `ingsw3-back-prod`
+- Usar PROD Railway DATABASE_URL
+
+### 2. Servicios Frontend (QA y PROD)
+
+#### Frontend QA:
+1. **Render Dashboard** → **New** → **Static Site**
+2. **Conectar repo**: `Kevinmass/IngSWIII-TP08`
+3. **Configurar:**
+   - **Name**: `ingsw3-front-qa`
+   - **Root Directory**: `./frontend`
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `build`
+
+#### Frontend PROD:
+- Repetir con nombre: `ingsw3-front-prod`
+
+### 3. Variables de Entorno Frontend
+**Los frontend services necesitan variables de entorno definidas por Render:**
+
+#### Frontend QA:
+- **REACT_APP_BACKEND_URL**: `https://ingsw3-back-qa.onrender.com`
+
+#### Frontend PROD:
+- **REACT_APP_BACKEND_URL**: `https://ingsw3-back-prod.onrender.com`
+
+**NOTA:** Las URLs de Render se generan automáticamente. Reemplazar con URLs reales una vez creados los servicios backend.
+
+---
+
+## 🖥️ Desarrollo Local
+
+### 1. Instalar Dependencias
 ```bash
-git clone https://github.com/TU-USUARIO/tp06-testing.git
-cd tp06-testing
-```
+git clone https://github.com/Kevinmass/IngSWIII-TP08.git
+cd IngSWIII-TP08
 
-### 2. Instalar dependencias del Backend
-
-```bash
+# Backend
 cd backend
 go mod download
-```
 
-### 3. Instalar dependencias del Frontend
-
-```bash
+# Frontend
 cd ../frontend
 npm install
+```
+
+### 2. Ejecución Local
+**Backend (Terminal 1):**
+```bash
+cd backend
+# Agregar DATABASE_URL si quieres usar PostgreSQL local
+DATABASE_URL="postgresql://..." go run cmd/api/main.go
+# O usar valor por defecto (error si no se configura)
+```
+
+**Frontend (Terminal 2):**
+```bash
+cd frontend
+npm start
 ```
 
 ---
@@ -293,43 +430,46 @@ El proyecto incluye un pipeline de CI/CD que se ejecuta automáticamente en cada
 ## 📁 Estructura del Proyecto
 
 ```
-tp06-testing/
+IngSWIII-TP08/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                   # Pipeline CI/CD
+│       └── ci-cd.yml               # Pipeline CI/CD con Render deployment
 │
 ├── backend/
 │   ├── cmd/api/
-│   │   └── main.go                  # Punto de entrada
+│   │   └── main.go                 # Punto de entrada (PostgreSQL-only)
 │   ├── internal/
 │   │   ├── database/
-│   │   │   └── database.go          # Inicialización SQLite
-│   │   ├── models/                  # Structs (User, Post, Comment)
-│   │   ├── repository/              # Acceso a datos
-│   │   │   ├── user_repository.go
+│   │   │   └── database.go         # PostgreSQL initialization + auto-schema
+│   │   ├── models/                 # Structs (User, Post, Comment)
+│   │   │   ├── users.go
+│   │   │   ├── post.go
+│   │   ├── repository/             # PostgreSQL data access
+│   │   │   ├── user_repository.go  # PostgreSQL with $1, $2 placeholders
 │   │   │   └── post_repository.go
-│   │   ├── services/                # Lógica de negocio
+│   │   ├── services/               # Business logic layer
 │   │   │   ├── auth_service.go
 │   │   │   └── post_service.go
-│   │   ├── handlers/                # Controladores HTTP
+│   │   ├── handlers/               # HTTP handlers
 │   │   │   ├── auth_handler.go
 │   │   │   └── post_handler.go
 │   │   └── router/
-│   │       └── router.go            # Rutas
-│   ├── tests/
-│   │   ├── mocks/                   # Repositorios mockeados
+│   │       └── router.go           # Routes + CORS middleware
+│   ├── tests/                      # Unit tests with mocks
+│   │   ├── mocks/
 │   │   │   ├── user_repository_mock.go
 │   │   │   └── post_repository_mock.go
-│   │   └── services/                # Tests unitarios
+│   │   └── services/
 │   │       ├── auth_service_test.go
 │   │       └── post_service_test.go
-│   ├── go.mod
-│   └── database.db                  # SQLite (generado automáticamente)
+│   ├── Dockerfile                  # Go 1.21 + PostgreSQL
+│   ├── go.mod                      # PostgreSQL-only dependencies
+│   └── go.sum                      # Lockfile checksums
 │
 ├── frontend/
 │   ├── public/
 │   ├── src/
-│   │   ├── components/
+│   │   ├── components/             # React components
 │   │   │   ├── Login/
 │   │   │   │   ├── Login.tsx
 │   │   │   │   ├── Login.test.tsx
@@ -340,27 +480,59 @@ tp06-testing/
 │   │   │   │   └── PostList.css
 │   │   │   ├── CreatePost/
 │   │   │   ├── CommentList/
-│   │   │   │   ├── CommentList.tsx
-│   │   │   │   ├── CommentList.test.tsx
-│   │   │   │   └── CommentList.css
 │   │   │   ├── CommentForm/
 │   │   │   └── PostDetail/
-│   │   ├── services/
-│   │   │   ├── authService.ts
-│   │   │   ├── authService.test.ts
-│   │   │   └── postService.ts
+│   │   ├── services/               # API services (env-aware)
+│   │   │   ├── authService.ts      # Auto-detect backend URL
+│   │   │   ├── postService.ts
+│   │   │   └── authService.test.ts
 │   │   ├── __mocks__/
-│   │   │   └── axios.ts             # Mock de HTTP
+│   │   │   └── axios.ts            # HTTP mocking
 │   │   ├── types/
-│   │   │   └── index.ts             # TypeScript types
+│   │   │   └── index.ts            # TypeScript definitions
 │   │   ├── App.tsx
 │   │   └── setupTests.ts
+│   ├── Dockerfile                  # Multi-stage Node.js build
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── README.md                        # Este archivo
-└── decisiones.md                    # Documentación técnica
+├── error-log.txt                   # Deployment troubleshooting logs
+├── decisiones.md                   # Technical documentation
+└── README.md                       # This file
 ```
+
+### 🔗 URLs y Endpoints
+
+#### Despliegue Actual (Render):
+- **Frontend QA**: `https://ingsw3-front-qa.onrender.com`
+- **Backend QA**: `https://ingsw3-back-qa.onrender.com`
+- **Frontend PROD**: `https://ingsw3-front-prod.onrender.com`
+- **Backend PROD**: `https://ingsw3-back-prod.onrender.com`
+
+#### API Endpoints:
+```
+POST   /api/auth/register     # User registration
+POST   /api/auth/login        # User login
+GET    /api/posts             # List all posts
+POST   /api/posts             # Create new post
+GET    /api/posts/:id         # Get post details
+DELETE /api/posts/:id         # Delete post (author only)
+GET    /api/posts/:id/comments    # Get post comments
+POST   /api/posts/:id/comments    # Add comment
+DELETE /api/posts/:postId/comments/:commentId  # Delete comment (author only)
+```
+
+### 🚀 Desarrollo vs Producción
+
+**Desarrollo Local:**
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8080`
+- Base de Datos: Railway PostgreSQL (ambos entornos)
+
+**Entorno de Producción:**
+- Frontend: Static site served by Render
+- Backend: Go server on Render
+- Base de Datos: Railway PostgreSQL (QA y PROD separados)
 
 ---
 
@@ -415,14 +587,15 @@ tp06-testing/
 # Compilar
 go build ./...
 
-# Tests
-go test ./...
-
-# Tests con detalle
+# Tests (con mocks, no requieren DB)
 go test ./tests/services/... -v
 
-# Limpiar base de datos
-rm backend/database.db
+# Tests de integración (requieren PostgreSQL)
+go test ./... -v
+
+# Verificar dependencias
+go mod verify
+go mod tidy
 ```
 
 ### Frontend
@@ -506,4 +679,3 @@ Verificar que el backend tenga el middleware CORS configurado en `router/router.
 Ingenieria en sistemas de informacion - UCC
 Materia: Ingeniería de Software 3  
 Año: 2025
-
