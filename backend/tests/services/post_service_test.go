@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"tp06-testing/internal/models"
-	"tp06-testing/internal/services"
-	"tp06-testing/tests/mocks"
+	"tp08-testing/internal/models"
+	"tp08-testing/internal/services"
+	"tp08-testing/tests/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

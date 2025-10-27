@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"tp06-testing/internal/models"
+	"tp08-testing/internal/models"
 )
 
 // PostRepository define las operaciones sobre posts

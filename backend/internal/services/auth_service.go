@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"tp06-testing/internal/models"
-	"tp06-testing/internal/repository"
+	"tp08-testing/internal/models"
+	"tp08-testing/internal/repository"
 )
 
 // AuthService maneja la lógica de autenticación

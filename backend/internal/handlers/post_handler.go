@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"tp08-testing/internal/models"
+	"tp08-testing/internal/services"
+
 	"github.com/gorilla/mux"
-	"tp06-testing/internal/models"
-	"tp06-testing/internal/services"
 )
 
 // PostHandler maneja las peticiones HTTP de posts

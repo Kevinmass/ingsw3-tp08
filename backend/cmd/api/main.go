@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 
-	"tp06-testing/internal/database"
-	"tp06-testing/internal/handlers"
-	"tp06-testing/internal/repository"
-	"tp06-testing/internal/router"
-	"tp06-testing/internal/services"
+	"tp08-testing/internal/database"
+	"tp08-testing/internal/handlers"
+	"tp08-testing/internal/repository"
+	"tp08-testing/internal/router"
+	"tp08-testing/internal/services"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 
-	"tp06-testing/internal/models"
+	"tp08-testing/internal/models"
 )
 
 // UserRepository define las operaciones sobre usuarios

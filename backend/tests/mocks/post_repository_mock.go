@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"tp06-testing/internal/models"
+	"tp08-testing/internal/models"
 
 	"github.com/stretchr/testify/mock"
 )
