@@ -145,8 +145,6 @@ jobs:
     # 🔴 REQUIRES MANUAL APPROVAL from environment reviewers
     environment:
       name: production
-      # URL to review deployment (optional)
-      url: https://render.com/deployments
     needs: deploy-qa  # Only after QA succeeds
     steps:
       - name: ⏳ Waiting for Production Approval
