@@ -137,16 +137,22 @@ jobs:
           -d '{}'
 
   # =====================================
-  # 🔹 DEPLOY PROD (Backend + Frontend)
+  # 🔹 DEPLOY PROD (Manual Approval Required)
   # =====================================
   deploy-prod:
-    name: Deploy PROD (Back + Front) to Render
+    name: Deploy PROD (Back + Front) to Render - REQUIRES MANUAL APPROVAL
     runs-on: ubuntu-latest
+    # 🔴 REQUIRES MANUAL APPROVAL from environment reviewers
     environment:
       name: production
-    needs: docker-build-push
+      # URL to review deployment (optional)
+      url: https://render.com/deployments
+    needs: deploy-qa  # Only after QA succeeds
     steps:
-      - name: Trigger backend PROD deploy
+      - name: ⏳ Waiting for Production Approval
+        run: echo "Pipeline paused. Requires manual approval from environment reviewers."
+
+      - name: 🚀 Deploy Backend to Production
         run: |
           curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_PROD_BACK_ID }}/deploys \
           -H 'accept: application/json' \
@@ -154,10 +160,13 @@ jobs:
           -H 'content-type: application/json' \
           -d '{}'
 
-      - name: Trigger frontend PROD deploy
+      - name: 🚀 Deploy Frontend to Production
         run: |
           curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_PROD_FRONT_ID }}/deploys \
           -H 'accept: application/json' \
           -H 'authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
           -H 'content-type: application/json' \
           -d '{}'
+
+      - name: ✅ Production Deployment Complete
+        run: echo "🎉 Production deployment successful!"
