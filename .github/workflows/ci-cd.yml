@@ -5,12 +5,21 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  IMAGE_BACK: ghcr.io/${{ github.repository_owner }}/ingsw-back
+  IMAGE_FRONT: ghcr.io/${{ github.repository_owner }}/ingsw-front
 
 jobs:
   backend-tests:
     name: Backend Tests (Go)
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -46,7 +55,6 @@ jobs:
   frontend-tests:
     name: Frontend Tests (React)
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -82,7 +90,6 @@ jobs:
     name: Backend Build
     runs-on: ubuntu-latest
     needs: backend-tests
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -100,7 +107,6 @@ jobs:
     name: Frontend Build
     runs-on: ubuntu-latest
     needs: frontend-tests
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -131,7 +137,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests, backend-build, frontend-build]
     if: always()
-    
     steps:
       - name: Check results
         run: |
@@ -140,3 +145,87 @@ jobs:
           echo "✓ Frontend Tests"
           echo "✓ Backend Build"
           echo "✓ Frontend Build"
+
+  # =====================================
+  # 🔹 NEW: BUILD AND PUSH DOCKER IMAGES
+  # =====================================
+  docker-build-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set tag
+        id: tag
+        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACK }}:${{ env.TAG }}
+            ${{ env.IMAGE_BACK }}:latest
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONT }}:${{ env.TAG }}
+            ${{ env.IMAGE_FRONT }}:latest
+
+  # =====================================
+  # 🔹 DEPLOY QA TO RAILWAY
+  # =====================================
+  deploy-qa:
+    name: Deploy QA to Railway
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: railway login --apiKey $RAILWAY_TOKEN || true
+
+      - name: Redeploy QA service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: railway redeploy --service ${{ secrets.RAILWAY_QA_SERVICE_ID }} -y
+
+  # =====================================
+  # 🔹 DEPLOY PROD (Requires Approval)
+  # =====================================
+  deploy-prod:
+    name: Deploy PROD to Railway
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    needs: docker-build-push
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: railway login --apiKey $RAILWAY_TOKEN || true
+
+      - name: Redeploy PROD service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: railway redeploy --service ${{ secrets.RAILWAY_PROD_SERVICE_ID }} -y
