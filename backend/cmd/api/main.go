@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"tp06-testing/internal/database"
 	"tp06-testing/internal/handlers"
@@ -34,9 +35,15 @@ func main() {
 	// Configurar rutas
 	r := router.Setup(authHandler, postHandler)
 
+	// Leer puerto de variable de entorno (Render la define automáticamente)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	// Iniciar servidor
-	log.Println("🚀 Servidor corriendo en http://localhost:8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	log.Printf("🚀 Servidor corriendo en http://localhost:%s\n", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal("Error al iniciar el servidor:", err)
 	}
 }
