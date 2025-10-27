@@ -12,10 +12,6 @@ permissions:
   packages: write
   id-token: write
 
-env:
-  IMAGE_BACK: ghcr.io/${{ github.repository_owner }}/ingsw-back
-  IMAGE_FRONT: ghcr.io/${{ github.repository_owner }}/ingsw-front
-
 jobs:
   backend-tests:
     name: Backend Tests (Go)
@@ -147,7 +143,7 @@ jobs:
           echo "✓ Frontend Build"
 
   # =====================================
-  # 🔹 NEW: BUILD AND PUSH DOCKER IMAGES
+  # 🔹 BUILD AND PUSH DOCKER IMAGES
   # =====================================
   docker-build-push:
     name: Build & Push Docker Images
@@ -156,6 +152,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 🔸 Normaliza el nombre del owner a minúsculas
+      - name: Normalize owner name
+        id: owner
+        run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -174,8 +175,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ env.IMAGE_BACK }}:${{ env.TAG }}
-            ${{ env.IMAGE_BACK }}:latest
+            ghcr.io/${{ env.OWNER_LC }}/ingsw-back:${{ env.TAG }}
+            ghcr.io/${{ env.OWNER_LC }}/ingsw-back:latest
 
       - name: Build & push frontend
         uses: docker/build-push-action@v5
@@ -183,8 +184,8 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ${{ env.IMAGE_FRONT }}:${{ env.TAG }}
-            ${{ env.IMAGE_FRONT }}:latest
+            ghcr.io/${{ env.OWNER_LC }}/ingsw-front:${{ env.TAG }}
+            ghcr.io/${{ env.OWNER_LC }}/ingsw-front:latest
 
   # =====================================
   # 🔹 DEPLOY QA TO RAILWAY
