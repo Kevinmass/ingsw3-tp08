@@ -1,0 +1,184 @@
+44s
+Run docker/build-push-action@v5
+GitHub Actions runtime token ACs
+Docker info
+Proxy configuration
+Buildx version
+Builder info
+/usr/bin/docker buildx build --iidfile /home/runner/work/_temp/docker-actions-toolkit-27d8H4/build-iidfile-ad97ca2407.txt --tag ghcr.io/kevinmass/ingsw-front:c1ff425 --tag ghcr.io/kevinmass/ingsw-front:latest --metadata-file /home/runner/work/_temp/docker-actions-toolkit-27d8H4/build-metadata-124093cf48.json --push ./frontend
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 598B done
+#1 DONE 0.0s
+
+#2 [auth] library/nginx:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/nginx:alpine
+#4 DONE 0.5s
+
+#5 [internal] load metadata for docker.io/library/node:18-alpine
+#5 DONE 0.5s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 957.20kB 0.0s done
+#7 DONE 0.0s
+
+#8 [builder 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#8 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#8 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0B / 1.26MB 0.1s
+#8 sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB done
+#8 sha256:929b04d7c782f04f615cf785488fed452b6569f87c73ff666ad553a7554f0006 1.72kB / 1.72kB done
+#8 sha256:ee77c6cd7c1886ecc802ad6cedef3a8ec1ea27d1fb96162bf03dd3710839b8da 6.18kB / 6.18kB done
+#8 sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 1.05MB / 3.64MB 0.1s
+#8 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 0B / 40.01MB 0.1s
+#8 sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 3.64MB / 3.64MB 0.2s done
+#8 extracting sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 0.1s
+#8 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 0B / 446B 0.2s
+#8 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 1.26MB / 1.26MB 0.2s done
+#8 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 6.29MB / 40.01MB 0.3s
+#8 extracting sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 0.1s done
+#8 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 446B / 446B 0.3s done
+#8 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 19.92MB / 40.01MB 0.5s
+#8 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 32.51MB / 40.01MB 0.6s
+#8 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 37.75MB / 40.01MB 0.7s
+#8 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e
+#8 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 0.8s done
+#8 ...
+
+#9 [stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:61e01287e546aac28a3f56839c136b31f590273f3b41187a36f46f6a03bbfe22
+#9 resolve docker.io/library/nginx:alpine@sha256:61e01287e546aac28a3f56839c136b31f590273f3b41187a36f46f6a03bbfe22 done
+#9 sha256:5e7abcdd20216bbeedf1369529564ffd60f830ed3540c477938ca580b645dff5 10.78kB / 10.78kB done
+#9 sha256:61e01287e546aac28a3f56839c136b31f590273f3b41187a36f46f6a03bbfe22 10.33kB / 10.33kB done
+#9 sha256:b03ccb7431a2e3172f5cbae96d82bd792935f33ecb88fbf2940559e475745c4e 2.50kB / 2.50kB done
+#9 sha256:f80aba050eadb732c9571d549167ce0f71adce202ac619ae8786fe6c9eec3374 1.81MB / 1.81MB 0.3s done
+#9 sha256:621a51978ed7f4a65a4324aaf124c21292fd986ed107e731f860572233073798 627B / 627B 0.3s done
+#9 extracting sha256:f80aba050eadb732c9571d549167ce0f71adce202ac619ae8786fe6c9eec3374 0.1s done
+#9 sha256:03e63548f2091b6073fb9744492242182874f6b2d2554c9f3a94455203a033f0 954B / 954B 0.4s done
+#9 sha256:83ce83cd996042dd16a6124be94e6046da71a9c6b59a6cc48704f6cffca76d7d 403B / 403B 0.4s done
+#9 sha256:e2d0ea5d3690e523d1c4fc7f288e0b98b6c405d5880fa11d1637483fd5afc74c 1.21kB / 1.21kB 0.4s done
+#9 sha256:7fb80c2f28bc872ae84429312ddfbc823aca17b7ce107a0f24074294cd3beac5 1.40kB / 1.40kB 0.5s done
+#9 sha256:76c9bcaa4163e6fb844375a66c86911591b942e01511e28eec442e187f667f4e 16.96MB / 16.96MB 0.8s done
+#9 extracting sha256:621a51978ed7f4a65a4324aaf124c21292fd986ed107e731f860572233073798 done
+#9 extracting sha256:03e63548f2091b6073fb9744492242182874f6b2d2554c9f3a94455203a033f0 done
+#9 extracting sha256:83ce83cd996042dd16a6124be94e6046da71a9c6b59a6cc48704f6cffca76d7d done
+#9 extracting sha256:e2d0ea5d3690e523d1c4fc7f288e0b98b6c405d5880fa11d1637483fd5afc74c done
+#9 extracting sha256:7fb80c2f28bc872ae84429312ddfbc823aca17b7ce107a0f24074294cd3beac5 done
+#9 extracting sha256:76c9bcaa4163e6fb844375a66c86911591b942e01511e28eec442e187f667f4e 0.6s done
+#9 DONE 1.9s
+
+#8 [builder 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#8 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 1.6s done
+#8 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3
+#8 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0.0s done
+#8 extracting sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 done
+#8 DONE 2.6s
+
+#10 [builder 2/6] WORKDIR /app
+#10 DONE 0.0s
+
+#11 [builder 3/6] COPY package*.json ./
+#11 DONE 0.0s
+
+#12 [builder 4/6] RUN npm ci --only=production
+#12 0.300 npm warn config only Use `--omit=dev` to omit dev dependencies from the install.
+#12 6.050 npm warn deprecated w3c-hr-time@1.0.2: Use your platform's native performance.now() and performance.timeOrigin.
+#12 6.588 npm warn deprecated stable@0.1.8: Modern JS already guarantees Array#sort() is a stable sort, so this library is deprecated. See the compatibility table on MDN: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#browser_compatibility
+#12 6.589 npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+#12 6.816 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#12 6.845 npm warn deprecated workbox-cacheable-response@6.6.0: workbox-background-sync@6.6.0
+#12 6.858 npm warn deprecated rollup-plugin-terser@7.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-terser
+#12 7.076 npm warn deprecated q@1.5.1: You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+#12 7.076 npm warn deprecated
+#12 7.076 npm warn deprecated (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
+#12 7.767 npm warn deprecated workbox-google-analytics@6.6.0: It is not compatible with newer versions of GA starting with v4, as long as you are using GAv3 it should be ok, but the package is not longer being maintained
+#12 8.661 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#12 9.575 npm warn deprecated domexception@2.0.1: Use your platform's native DOMException instead
+#12 10.40 npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+#12 10.58 npm warn deprecated svgo@1.3.2: This SVGO version is no longer supported. Upgrade to v2.x.x.
+#12 11.13 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#12 11.18 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#12 11.79 npm warn deprecated @babel/plugin-proposal-private-methods@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-methods instead.
+#12 11.79 npm warn deprecated @babel/plugin-proposal-optional-chaining@7.21.0: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-optional-chaining instead.
+#12 11.82 npm warn deprecated @babel/plugin-proposal-numeric-separator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-numeric-separator instead.
+#12 11.82 npm warn deprecated @babel/plugin-proposal-class-properties@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-class-properties instead.
+#12 11.85 npm warn deprecated @babel/plugin-proposal-nullish-coalescing-operator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-nullish-coalescing-operator instead.
+#12 12.26 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 12.40 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 12.60 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 13.01 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 13.31 npm warn deprecated source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
+#12 13.57 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 13.84 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#12 14.06 npm warn deprecated @babel/plugin-proposal-private-property-in-object@7.21.11: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-property-in-object instead.
+#12 16.68 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#12 19.89 
+#12 19.89 added 1450 packages, and audited 1451 packages in 20s
+#12 19.89 
+#12 19.89 275 packages are looking for funding
+#12 19.89   run `npm fund` for details
+#12 19.90 
+#12 19.90 9 vulnerabilities (3 moderate, 6 high)
+#12 19.90 
+#12 19.90 To address all issues (including breaking changes), run:
+#12 19.90   npm audit fix --force
+#12 19.90 
+#12 19.90 Run `npm audit` for details.
+#12 19.90 npm notice
+#12 19.90 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+#12 19.90 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+#12 19.90 npm notice To update run: npm install -g npm@11.6.2
+#12 19.90 npm notice
+#12 DONE 21.5s
+
+#13 [builder 5/6] COPY . .
+#13 DONE 0.0s
+
+#14 [builder 6/6] RUN npm run build
+#14 0.312 
+#14 0.312 > frontend@0.1.0 build
+#14 0.312 > react-scripts build
+#14 0.312 
+#14 1.862 Creating an optimized production build...
+#14 18.27 Failed to compile.
+#14 18.27 
+#14 18.28 TS2307: Cannot find module '@testing-library/react' or its corresponding type declarations.
+#14 18.28   > 1 | import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+#14 18.28       |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+#14 18.28     2 | import  CommentList from './CommentList';
+#14 18.28     3 | import axios from 'axios';
+#14 18.28     4 |
+#14 18.28 
+#14 18.28 
+#14 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [builder 6/6] RUN npm run build:
+18.27 Failed to compile.
+18.27 
+18.28 TS2307: Cannot find module '@testing-library/react' or its corresponding type declarations.
+18.28   > 1 | import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+18.28       |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+18.28     2 | import  CommentList from './CommentList';
+18.28     3 | import axios from 'axios';
+18.28     4 |
+18.28 
+18.28 
+------
+Dockerfile:17
+--------------------
+  15 |     
+  16 |     # Build the application
+  17 | >>> RUN npm run build
+  18 |     
+  19 |     # Production stage
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+Error: buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
