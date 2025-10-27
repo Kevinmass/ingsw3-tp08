@@ -10,10 +10,10 @@ RUN adduser -D -g '' appuser
 # Set working directory
 WORKDIR /build
 
-# Copy go.mod and go.sum
-COPY go.mod go.sum ./
+# Copy go.mod first
+COPY go.mod ./
 
-# Download dependencies
+# Download dependencies (creates go.sum)
 RUN go mod download
 
 # Enable CGO for sqlite3
