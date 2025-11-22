@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"tp08-testing/internal/models"
-	"tp08-testing/internal/services"
+	"ingsw3-tp7-tp8-integrated/internal/models"
+	"ingsw3-tp7-tp8-integrated/internal/services"
 )
 
 // AuthHandler maneja las peticiones HTTP de autenticación

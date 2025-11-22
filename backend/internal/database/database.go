@@ -20,7 +20,7 @@ func InitDB(connectionString string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Crear las tablas si no existen
+	// Crear las tablas
 	if err = createTables(db); err != nil {
 		return nil, err
 	}

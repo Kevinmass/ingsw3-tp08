@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 
-	"tp08-testing/internal/handlers"
+	"ingsw3-tp7-tp8-integrated/internal/handlers"
 
 	"github.com/gorilla/mux"
 )

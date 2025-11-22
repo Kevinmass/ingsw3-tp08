@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ingsw3-integrated-postgres
+    environment:
+      POSTGRES_DB: ingsw3_integrated
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ingsw3-integrated-backend
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/ingsw3_integrated?sslmode=disable
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ingsw3-integrated-frontend
+    ports:
+      - "3000:80"  # Nginx serves on port 80 inside container
+    environment:
+      REACT_APP_BACKEND_URL: http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

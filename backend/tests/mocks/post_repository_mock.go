@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"tp08-testing/internal/models"
+	"ingsw3-tp7-tp8-integrated/internal/models"
 
 	"github.com/stretchr/testify/mock"
 )

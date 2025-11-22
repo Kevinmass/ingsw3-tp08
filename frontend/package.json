@@ -43,6 +43,26 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "cypress": "^13.15.2",
     "jest-mock-axios": "^4.9.0"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/components/**/*.{ts,tsx}",
+      "src/services/**/*.{ts,tsx}",
+      "!src/**/*.test.{ts,tsx}",
+      "!src/index.tsx",
+      "!src/reportWebVitals.ts",
+      "!src/App.tsx",
+      "!src/types/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
   }
 }

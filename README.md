@@ -1,348 +1,206 @@
-# TP08 - Sistema de Integración y Despliegue
+# TP7 + TP8 - Integración Completa: Quality Assurance + Contenedores
 
-**Materia:** Ingeniería de Software 3
 **Alumno:** Octavio Carpineti - Kevin Massholder
-**Año:** 2025
+**Materia:** Ingeniería de Software III
+**Fecha:** Noviembre 2025
 
-Mini red social completa con PostgreSQL, entornos QA/PROD separados, Railway databases, Render deployment, y suite completa de pruebas unitarias (42 tests).
+**Integración:** TP7 (Pruebas, QA, SonarCloud) + TP8 (Contenedores, PostgreSQL, Deploy)
 
 ---
 
 ## 📋 Tabla de Contenidos
 
-- [Tecnologías](#tecnologías)
-- [Arquitectura](#arquitectura)
-- [Funcionalidades](#funcionalidades)
-- [Prerequisitos](#prerequisitos)
-- [Instalación](#instalación)
-- [Ejecución](#ejecución)
-- [Testing](#testing)
-- [CI/CD](#cicd)
-- [Estructura del Proyecto](#estructura-del-proyecto)
+1. [Descripción del Proyecto](#descripción-del-proyecto)
+2. [Arquitectura Integrada](#arquitectura-integrada)
+3. [Requisitos Previos](#requisitos-previos)
+4. [Instalación](#instalación)
+5. [Ejecución del Proyecto](#ejecución-del-proyecto)
+6. [Ejecución de Tests](#ejecución-de-tests)
+7. [Herramientas de Calidad](#herramientas-de-calidad)
+8. [Deployment y Contenedores](#deployment-y-contenedores)
+9. [Pipeline CI/CD](#pipeline-cicd)
+10. [Estructura del Proyecto](#estructura-del-proyecto)
 
 ---
 
-## 🛠️ Tecnologías
+## 📖 Descripción del Proyecto
 
-### Backend
-- **Go 1.21+**
-- **PostgreSQL** (Railway cloud databases)
-- **Gorilla Mux** (routing)
-- **lib/pq** (PostgreSQL driver)
-- **testify** (testing + mocking)
+Mini red social desarrollada con React (frontend) y Go (backend) que implementa:
 
-### Frontend
-- **React 18** con **TypeScript**
-- **Axios** (HTTP client)
-- **Jest** + **React Testing Library** (testing)
+- Registro y autenticación de usuarios
+- Creación, visualización y eliminación de posts
+- Sistema de comentarios en posts
+- Validaciones de permisos (solo el autor puede eliminar su contenido)
 
-### Infraestructura
-- **Railway** (PostgreSQL databases)
-- **Render** (deployment platform)
-- **GitHub Actions** (CI/CD)
-- **Docker** (containerization)
+**Stack Tecnológico:**
+- **Backend:** Go 1.24 + PostgreSQL (Railway/Render)
+- **Frontend:** React 18 + TypeScript
+- **Testing:** Go testing + Jest + Cypress (74 unit + 15 E2E = 89 tests)
+- **Containers:** Docker + GitHub Container Registry
+- **Deployment:** Render (QA/PROD) + Railway PostgreSQL
+- **Quality:** SonarCloud (47 issues fixed) + Code Coverage (86.5%/92.44%)
+- **CI/CD:** GitHub Actions (calidad → contenedores → deploy)
 
 ---
 
-## 🚀 Despliegue y Arquitectura
+## 🏗️ Arquitectura Integrada
 
-### Entornos de Despliegue
-```
-┌─────────────────┐    ┌─────────────────┐
-│   Frontend QA   │    │  Frontend PROD  │
-│ Render Service  │    │ Render Service  │
-└─────────┬───────┘    └───────┬─────────┘
-          │                    │
-          │                    │
-          ▼                    ▼
-┌─────────────────┐    ┌─────────────────┐
-│   Backend QA    │    │  Backend PROD   │
-│ Render Service  │    │ Render Service  │
-│                 │    │                 │
-│ DATABASE_URL →  │    │ DATABASE_URL →  │
-└─────────┬───────┘    └───────┬─────────┘
-          │                    │
-          ▼                    ▼
-┌─────────────────┐    ┌─────────────────┐
-│ PostgreSQL QA   │    │ PostgreSQL PROD │
-│   Railway DB    │    │   Railway DB    │
-└─────────────────┘    └─────────────────┘
-```
-
-### Arquitectura por Capas
-
+### Capas de la Aplicación
 ```
 Frontend (React)     →      Backend (Go)
 ──────────────────────     ────────────────────
-Login/PostList         ┌─►  Handlers     (HTTP handlers)
-React Components       │    ├── auth_handler.go
-API Calls (axios)      │    └── post_handler.go
+React Components         ┌─►  Handlers     (HTTP handlers)
+Axios Environment-aware │    ├── auth_handler.go
+Auto-detect Backend URL  │    └── post_handler.go
                         │
                         │    Services     (business logic)
                         ├── auth_service.go      ───┐
-                        └── post_service.go           │
-                                                      │ MOCK repository
-                        Repository   (data access)   │ (for testing)
-                        ├── user_repository.go ──┐   │
-                        └── post_repository.go ──┐┼───┘
-                                                  │
-PSQL Repository                  PostgreSQL
-(SELECT/INSERT/UPDATE)          (Railway Cloud)
+                        └── post_service.go       ┌─┼───── Repository Interface
+                              Validaciones        │ │       (mocks for testing)
+                              Permisos            │ │       PostgreSQLUserRepository
+                                                 │ │       PostgreSQLPostRepository
+                        Repository               │ │
+                        ├── user_repository.go ──┘ │
+                        └── post_repository.go     │
+                                                   │
+PostgreSQL (Railway Cloud)     ←─── $1 placeholders + RETURNING
+Railway QA / Railway PROD       ←─── Environment variables
 ```
 
-### Configuración de Base de Datos
-
-**Esquema PostgreSQL:**
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    username TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE posts (
-    id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE comments (
-    id SERIAL PRIMARY KEY,
-    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_comments_post_id ON comments(post_id);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
+### Ambiente QA vs PROD
+```
+QA (Auto-deploy)                          PROD (Manual approval)
+─────────────────────────────────        ─────────────────────────────────
+Frontend: render-qa.onrender.com         Frontend: render-prod.onrender.com
+Backend:  back-qa.onrender.com           Backend:  back-prod.onrender.com
+DB:       Railway pg-qa                  DB:       Railway pg-prod
+Deploy:   GitHub Actions → auto          Deploy:   Manual approval → deploy
 ```
 
 ---
 
-## ✨ Funcionalidades
+## 🔧 Requisitos Previos
 
-### Autenticación
-- ✅ Registro de usuarios con validación
-- ✅ Login con email/password
-- ✅ JWT-like session handling (headers)
-- ✅ CORS configurado para cross-origin
+### Software Necesario
 
-### Posts y Comentarios
-- ✅ Crear post con título y contenido
-- ✅ Listar posts de todos los usuarios
-- ✅ Ver detalle de post con comentarios
-- ✅ Eliminar post (solo autor)
-- ✅ Comentar en posts
-- ✅ Eliminar comentarios (solo autor)
-
-### Validaciones de Negocio
-- 🔒 **Autorización**: Solo el autor puede eliminar posts/comentarios
-- ✉️ **Email**: Validación de formato y unicidad
-- 🔑 **Password**: Mínimo 6 caracteres
-- 📝 **Posts**: Título mínimo 3 caracteres
-- 🗃️ **Base de Datos**: Constraints a nivel DB (foreign keys, serial IDs)
-
-### Separación de QA/PROD
-- ✅ **Bases de datos independientes**: QA y PROD no comparten datos
-- ✅ **URLs separadas**: Cada entorno tiene su propia URL
-- ✅ **Variables de entorno**: Configuración por entorno
-
----
-
-## 📦 Prerequisitos
-
-### Cuentas y Servicios Externos
-
-#### Railway (Base de Datos PostgreSQL)
-1. Registrarse en [Railway.app](https://railway.app)
-2. Agregar método de pago (requerido para PostgreSQL)
-3. Crear proyecto: **ingsw3-tp08-qa** y **ingsw3-tp08-prod**
-
-#### Render (Despliegue)
-1. Registrarse en [Render.com](https://render.com)
-2. Conectar repositorio de GitHub
-3. Crear servicios separados para QA y PROD
-
-### Instalación de Herramientas Locales
-
-#### Go (Backend)
 ```bash
-go version  # Debe ser 1.21+
+# Verificar versiones instaladas:
+go version    # Debe ser 1.24 o superior
+node --version # Debe ser 20 o superior
+npm --version  # Debe ser 10 o superior
 ```
 
-#### Node.js (Frontend)
+### Instalación de Dependencias (si no las tenés)
+
+**Go:**
 ```bash
-node --version  # Debe ser 18+
-npm --version
+# macOS
+brew install go
+
+# Ubuntu/Debian
+sudo apt install golang-go
+
+# Windows
+# Descargar desde: https://go.dev/dl/
 ```
 
-#### Git
+**Node.js y npm:**
 ```bash
-git --version
+# macOS
+brew install node
+
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Windows
+# Descargar desde: https://nodejs.org/
 ```
 
 ---
 
-## 🗄️ Configuración de Base de Datos (Railway)
+## 📥 Instalación
 
-### 1. Crear Base de Datos QA
-1. **Railway Dashboard** → **New Project** → **Provision PostgreSQL**
-2. Nombre: `ingsw3-tp08-qa`
-3. Plan: **Hobby** (512MB RAM, 1GB storage)
-4. Crear y esperar configuración (~2-3 minutos)
+### 1. Clonar el Repositorio
 
-### 2. Crear Base de Datos PROD
-1. Repetir proceso para PROD
-2. Nombre: `ingsw3-tp08-prod`
-3. Plan: **Hobby** (libre para uso básico)
-
-### 3. Configurar Esquema
-**Para cada base de datos:**
-1. Ir a → **Variables** → **Query** tab
-2. Ejecutar el esquema de arriba (users, posts, comments)
-
-### 4. Obtener URLs de Conexión
-**Para cada DB:**
-- Ir a **"Variables"** tab
-- Copiar **`DATABASE_URL`** value
-
-Ejemplo: `postgresql://postgres:abcd1234@us-west1-postgres-xyz.railway.app:5432/railway`
-
----
-
-## 🎪 Despliegue en Render
-
-### 1. Servicios Backend (QA y PROD)
-
-#### Backend QA:
-1. **Render Dashboard** → **New** → **Web Service**
-2. **Conectar GitHub repo**: `Kevinmass/IngSWIII-TP08`
-3. **Configurar servicio:**
-   - **Name**: `ingsw3-back-qa`
-   - **Root Directory**: `./backend`
-   - **Environment**: `Go`
-   - **Go Version**: `1.21`
-   - **Build Command**: `go mod download`
-   - **Start Command**: `go run cmd/api/main.go`
-
-4. **Environment Variables:**
-   - **DATABASE_URL**: `[tu QA Railway DATABASE_URL]`
-
-#### Backend PROD:
-- Repetir con nombre: `ingsw3-back-prod`
-- Usar PROD Railway DATABASE_URL
-
-### 2. Servicios Frontend (QA y PROD)
-
-#### Frontend QA:
-1. **Render Dashboard** → **New** → **Static Site**
-2. **Conectar repo**: `Kevinmass/IngSWIII-TP08`
-3. **Configurar:**
-   - **Name**: `ingsw3-front-qa`
-   - **Root Directory**: `./frontend`
-   - **Build Command**: `npm install && npm run build`
-   - **Publish Directory**: `build`
-
-#### Frontend PROD:
-- Repetir con nombre: `ingsw3-front-prod`
-
-### 3. Variables de Entorno Frontend
-**Los frontend services necesitan variables de entorno definidas por Render:**
-
-#### Frontend QA:
-- **REACT_APP_BACKEND_URL**: `https://ingsw3-back-qa.onrender.com`
-
-#### Frontend PROD:
-- **REACT_APP_BACKEND_URL**: `https://ingsw3-back-prod.onrender.com`
-
-**NOTA:** Las URLs de Render se generan automáticamente. Reemplazar con URLs reales una vez creados los servicios backend.
-
----
-
-## 🖥️ Desarrollo Local
-
-### 1. Instalar Dependencias
 ```bash
-git clone https://github.com/Kevinmass/IngSWIII-TP08.git
-cd IngSWIII-TP08
+git clone https://github.com/OctavioCarpineti/IngSWIII-TP07-Quality.git
+cd IngSWIII-TP07-Quality
+```
 
-# Backend
+### 2. Instalar Dependencias del Backend
+
+```bash
 cd backend
 go mod download
-
-# Frontend
-cd ../frontend
-npm install
+cd ..
 ```
 
-### 2. Ejecución Local
-**Backend (Terminal 1):**
-```bash
-cd backend
-# Agregar DATABASE_URL si quieres usar PostgreSQL local
-DATABASE_URL="postgresql://..." go run cmd/api/main.go
-# O usar valor por defecto (error si no se configura)
-```
+### 3. Instalar Dependencias del Frontend
 
-**Frontend (Terminal 2):**
 ```bash
 cd frontend
-npm start
+npm install
+cd ..
 ```
 
 ---
 
-## ▶️ Ejecución
+## 🚀 Ejecución del Proyecto
 
-### Opción A: Ejecutar Backend y Frontend por separado
+### Opción 1: Ejecución Manual (Recomendado para desarrollo)
 
-#### Terminal 1 - Backend
+**Terminal 1 - Backend:**
 ```bash
 cd backend
 go run cmd/api/main.go
 ```
 
+El backend estará corriendo en `http://localhost:8080`
+
 Deberías ver:
 ```
-Base de datos inicializada correctamente
 🚀 Servidor corriendo en http://localhost:8080
+📊 Base de datos inicializada
 ```
 
-#### Terminal 2 - Frontend
+**Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm start
 ```
 
-Se abrirá automáticamente en: `http://localhost:3000`
+El frontend estará corriendo en `http://localhost:3000`
 
-### Opción B: Script para ejecutar ambos (Linux/Mac)
+Se abrirá automáticamente en tu navegador.
 
+### Opción 2: Ejecución con Scripts
+
+**Backend:**
 ```bash
-# Crear script
-cat > run.sh << 'EOF'
-#!/bin/bash
-cd backend && go run cmd/api/main.go &
-BACKEND_PID=$!
-cd ../frontend && npm start
-kill $BACKEND_PID
-EOF
+cd backend
+# Compilar
+go build -o app cmd/api/main.go
 
-chmod +x run.sh
-./run.sh
+# Ejecutar
+./app
+```
+
+**Frontend:**
+```bash
+cd frontend
+# Build de producción
+npm run build
+
+# Servir build (requiere serve instalado: npm install -g serve)
+serve -s build -l 3000
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Ejecución de Tests
 
-### Backend Tests (Go)
+### Tests Unitarios - Backend
 
 ```bash
 cd backend
@@ -350,11 +208,15 @@ cd backend
 # Ejecutar todos los tests
 go test ./tests/services/... -v
 
-# Con cobertura
-go test ./tests/services/... -v -cover
+# Ejecutar tests con coverage
+go test ./tests/services/... -v -cover -coverpkg=./internal/services/...
 
-# Solo un test específico
-go test ./tests/services/ -v -run TestRegister_Success
+# Generar reporte HTML de coverage
+go test ./tests/services/... -coverprofile=coverage.out -coverpkg=./internal/services/...
+go tool cover -html=coverage.out
+
+# Ver coverage en terminal
+go tool cover -func=coverage.out
 ```
 
 **Resultado esperado:**
@@ -363,113 +225,283 @@ go test ./tests/services/ -v -run TestRegister_Success
 --- PASS: TestRegister_Success (0.00s)
 ...
 PASS
-ok      tp06-testing/tests/services     0.582s
+coverage: 86.5% of statements in ./internal/services
+ok      tp06-testing/tests/services     0.537s
 ```
 
-**Total: 23 tests** ✅
-
-### Frontend Tests (React)
+### Tests Unitarios - Frontend
 
 ```bash
 cd frontend
 
-# Ejecutar todos los tests
+# Ejecutar tests en modo watch
 npm test
 
-# Con cobertura
-npm test -- --coverage
-
-# Sin modo watch
+# Ejecutar tests una vez
 npm test -- --watchAll=false
+
+# Ejecutar tests con coverage
+npm test -- --coverage --watchAll=false
+
+# Ver reporte de coverage en navegador
+open coverage/lcov-report/index.html
 ```
 
 **Resultado esperado:**
 ```
-PASS  src/components/Login/Login.test.tsx
-PASS  src/components/PostList/PostList.test.tsx
-PASS  src/components/CommentList/CommentList.test.tsx
-PASS  src/services/authService.test.ts
-
-Test Suites: 4 passed, 4 total
-Tests:       19 passed, 19 total
+Test Suites: 8 passed, 8 total
+Tests:       39 passed, 39 total
+Coverage:    92.44% statements
 ```
 
-**Total: 19 tests** ✅
+### Tests E2E - Cypress
 
-### Ejecutar TODOS los tests (Backend + Frontend)
+**Prerequisito: Backend y Frontend deben estar corriendo**
 
 ```bash
-# Desde la raíz del proyecto
-cd backend && go test ./... && cd ../frontend && npm test -- --watchAll=false
+# Terminal 1: Backend
+cd backend
+go run cmd/api/main.go
+
+# Terminal 2: Frontend  
+cd frontend
+npm start
+
+# Terminal 3: Cypress
+cd frontend
+
+# Modo interactivo (recomendado)
+npx cypress open
+# Luego click en "E2E Testing" y seleccionar los tests
+
+# Modo headless (para CI/CD)
+npx cypress run
+```
+
+**Resultado esperado:**
+```
+Running:  auth.cy.js                    (1 of 4)
+  ✓ 5 tests passing
+
+Running:  posts.cy.js                   (2 of 4)
+  ✓ 5 tests passing
+
+Running:  comments.cy.js                (3 of 4)
+  ✓ 4 tests passing
+
+Running:  full-flow.cy.js               (4 of 4)
+  ✓ 1 test passing
+
+Total: 15 tests passing
 ```
 
 ---
 
-## 🔄 CI/CD
+## 🔍 Herramientas de Calidad
+
+### 1. SonarCloud (Análisis Estático)
+
+**Acceso al proyecto:**
+```
+URL: https://sonarcloud.io/project/overview?id=OctavioCarpineti_IngSWIII-TP07-Quality
+Organization: octaviocarpineti
+```
+
+**Análisis local (opcional):**
+```bash
+# Requiere configuración de SONAR_TOKEN
+docker run --rm \
+  -e SONAR_HOST_URL="https://sonarcloud.io" \
+  -e SONAR_TOKEN="tu-token" \
+  -v "$(pwd):/usr/src" \
+  sonarsource/sonar-scanner-cli
+```
+
+### 2. Code Coverage
+
+**Backend:**
+```bash
+cd backend
+go test ./tests/services/... -coverprofile=coverage.out -coverpkg=./internal/services/...
+
+# Ver en terminal
+go tool cover -func=coverage.out | grep total
+
+# Ver en navegador
+go tool cover -html=coverage.out
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm test -- --coverage --watchAll=false
+
+# Abrir reporte HTML
+open coverage/lcov-report/index.html
+```
+
+---
+
+## 🚢 Deployment y Contenedores
+
+### Desarrollo Local con Docker Compose
+
+Para ejecutar todo el stack localmente:
+
+```bash
+# Ejecutar con docker-compose
+docker-compose up --build
+
+# Servicios disponibles:
+# - PostgreSQL: localhost:5432
+# - Backend:    localhost:8080
+# - Frontend:   localhost:3000
+```
+
+### Contenedores Individuales
+
+**Backend:**
+```bash
+cd backend
+docker build -t ingsw3-integrated-backend .
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgresql://..." \
+  ingsw3-integrated-backend
+```
+
+**Frontend:**
+```bash
+cd frontend
+docker build -t ingsw3-integrated-frontend .
+docker run -p 3000:80 \
+  -e REACT_APP_BACKEND_URL="http://localhost:8080" \
+  ingsw3-integrated-frontend
+```
+
+### Deployment en Producción
+
+#### Registros Necesarios:
+
+**Railway (Base de datos PostgreSQL):**
+1. Crear proyecto QA: `ingsw3-integrated-qa`
+2. Crear proyecto PROD: `ingsw3-integrated-prod`
+3. Copiar `DATABASE_URL` de cada uno
+
+**Render (Aplicación):**
+1. Crear servicio web QA backend
+2. Crear servicio static site QA frontend
+3. Repetir para PROD
+4. Configurar environment variables:
+   - Backend: `DATABASE_URL`, `PORT`
+   - Frontend: `REACT_APP_BACKEND_URL`
+
+#### GitHub Secrets Requeridos:
+```
+RENDER_QA_BACK_ID     # ID del servicio QA backend en Render
+RENDER_QA_FRONT_ID    # ID del servicio QA frontend en Render
+RENDER_PROD_BACK_ID   # ID del servicio PROD backend en Render
+RENDER_PROD_FRONT_ID  # ID del servicio PROD frontend en Render
+RENDER_API_KEY        # API key de Render para deployments
+SONAR_TOKEN           # Para SonarCloud analysis
+```
+
+### Arquitectura de Deploy
+
+```
+Git Push
+   ↓
+GitHub Actions
+   ↓ Quality Gates (TP7)
+   ↓  Backend/Frontend Tests
+   ↓  Coverage ≥70%
+   ↓  SonarCloud Pass
+   ↓  Cypress E2E
+   ↓
+Docker Build (TP8)
+   ↓ Push to GHCR
+   ↓
+Deploy QA (Auto)
+   ↓
+Manual Approval
+   ↓
+Deploy PROD (TP8)
+```
+
+---
+
+## 🔄 Pipeline CI/CD
 
 ### GitHub Actions
 
-El proyecto incluye un pipeline de CI/CD que se ejecuta automáticamente en cada push.
+El pipeline integrado ejecuta automáticamente en cada push y combina TP7 + TP8:
 
-**Archivo:** `.github/workflows/ci.yml`
+**Fases del Pipeline:**
+1. 🔍 **Calidad (TP7):** Tests unitarios, coverage, SonarCloud, E2E
+2. 🐳 **Contenedores (TP8):** Docker build + push to GHCR
+3. 🚀 **Despliegue QA:** Deploy automático a Render QA
+4. ✋ **Aprobación PROD:** Espera aprobación manual
+5. 🎯 **Despliegue PROD:** Deploy final a producción
 
-**Workflow:**
-1. ✅ **Backend Tests** - Ejecuta `go test`
-2. ✅ **Frontend Tests** - Ejecuta `npm test`
-3. ✅ **Backend Build** - Compila con `go build`
-4. ✅ **Frontend Build** - Compila con `npm run build`
-5. ✅ **Summary** - Resumen final
+**Quality Gates Configurados:**
+- ❌ Backend coverage < 70% (86.5% alcanzado)
+- ❌ Frontend coverage < 70% (92.44% alcanzado)
+- ❌ SonarCloud Quality Gate falla (PASSED)
+- ❌ Tests unitarios fallan (35 back + 39 front)
+- ❌ Tests E2E fallan (15 Cypress)
+- ❌ Builds de contenedores fallan
 
-**Ver resultados:**
-1. Ir a: `https://github.com/TU-USUARIO/tp06-testing/actions`
-2. Seleccionar el workflow más reciente
-3. Ver logs detallados de cada job
+**Ver estado del pipeline:**
+```
+GitHub > Actions > CI/CD Pipeline
+```
+
+**Ejecutar pipeline manualmente:**
+```bash
+git commit --allow-empty -m "trigger pipeline"
+git push
+```
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-IngSWIII-TP08/
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml               # Pipeline CI/CD con Render deployment
-│
+tp07-quality/
 ├── backend/
-│   ├── cmd/api/
-│   │   └── main.go                 # Punto de entrada (PostgreSQL-only)
+│   ├── cmd/
+│   │   └── api/
+│   │       └── main.go              # Entry point del servidor
 │   ├── internal/
-│   │   ├── database/
-│   │   │   └── database.go         # PostgreSQL initialization + auto-schema
-│   │   ├── models/                 # Structs (User, Post, Comment)
-│   │   │   ├── users.go
-│   │   │   ├── post.go
-│   │   ├── repository/             # PostgreSQL data access
-│   │   │   ├── user_repository.go  # PostgreSQL with $1, $2 placeholders
-│   │   │   └── post_repository.go
-│   │   ├── services/               # Business logic layer
+│   │   ├── handlers/                # HTTP handlers (POST, GET, DELETE)
+│   │   │   ├── auth_handler.go
+│   │   │   ├── post_handler.go
+│   │   │   └── utils.go
+│   │   ├── services/                # Lógica de negocio (86.5% coverage)
 │   │   │   ├── auth_service.go
 │   │   │   └── post_service.go
-│   │   ├── handlers/               # HTTP handlers
-│   │   │   ├── auth_handler.go
-│   │   │   └── post_handler.go
-│   │   └── router/
-│   │       └── router.go           # Routes + CORS middleware
-│   ├── tests/                      # Unit tests with mocks
-│   │   ├── mocks/
-│   │   │   ├── user_repository_mock.go
-│   │   │   └── post_repository_mock.go
-│   │   └── services/
-│   │       ├── auth_service_test.go
-│   │       └── post_service_test.go
-│   ├── Dockerfile                  # Go 1.21 + PostgreSQL
-│   ├── go.mod                      # PostgreSQL-only dependencies
-│   └── go.sum                      # Lockfile checksums
+│   │   ├── repository/              # Acceso a datos (interfaz)
+│   │   │   ├── user_repository.go
+│   │   │   └── post_repository.go
+│   │   ├── models/                  # Estructuras de datos
+│   │   │   ├── users.go
+│   │   │   └── post.go
+│   │   ├── database/                # Configuración BD
+│   │   │   └── database.go
+│   │   └── router/                  # Configuración de rutas
+│   │       └── router.go
+│   ├── tests/
+│   │   ├── services/                # 35 tests unitarios
+│   │   │   ├── auth_service_test.go
+│   │   │   └── post_service_test.go
+│   │   └── mocks/                   # Mocks para testing
+│   │       ├── mock_user_repository.go
+│   │       └── mock_post_repository.go
+│   ├── go.mod
+│   └── go.sum
 │
 ├── frontend/
-│   ├── public/
 │   ├── src/
-│   │   ├── components/             # React components
+│   │   ├── components/              # Componentes React (92.44% coverage)
 │   │   │   ├── Login/
 │   │   │   │   ├── Login.tsx
 │   │   │   │   ├── Login.test.tsx
@@ -479,203 +511,152 @@ IngSWIII-TP08/
 │   │   │   │   ├── PostList.test.tsx
 │   │   │   │   └── PostList.css
 │   │   │   ├── CreatePost/
+│   │   │   ├── PostDetail/
 │   │   │   ├── CommentList/
-│   │   │   ├── CommentForm/
-│   │   │   └── PostDetail/
-│   │   ├── services/               # API services (env-aware)
-│   │   │   ├── authService.ts      # Auto-detect backend URL
+│   │   │   └── CommentForm/
+│   │   ├── services/                # Servicios HTTP
+│   │   │   ├── authService.ts
+│   │   │   ├── authService.test.ts
 │   │   │   ├── postService.ts
-│   │   │   └── authService.test.ts
-│   │   ├── __mocks__/
-│   │   │   └── axios.ts            # HTTP mocking
-│   │   ├── types/
-│   │   │   └── index.ts            # TypeScript definitions
-│   │   ├── App.tsx
-│   │   └── setupTests.ts
-│   ├── Dockerfile                  # Multi-stage Node.js build
+│   │   │   └── postService.test.ts
+│   │   ├── types/                   # Definiciones TypeScript
+│   │   │   └── index.ts
+│   │   ├── App.tsx                  # Componente principal
+│   │   └── index.tsx                # Entry point
+│   ├── cypress/
+│   │   ├── e2e/
+│   │   │   └── blog/                # 15 tests E2E
+│   │   │       ├── auth.cy.js       # 5 tests
+│   │   │       ├── posts.cy.js      # 5 tests
+│   │   │       ├── comments.cy.js   # 4 tests
+│   │   │       └── full-flow.cy.js  # 1 test
+│   │   └── support/
+│   │       ├── e2e.js
+│   │       └── commands.js
+│   ├── cypress.config.js
 │   ├── package.json
-│   └── tsconfig.json
+│   └── package-lock.json
 │
-├── error-log.txt                   # Deployment troubleshooting logs
-├── decisiones.md                   # Technical documentation
-└── README.md                       # This file
+├── .github/
+│   └── workflows/
+│       └── ci.yml                   # Pipeline CI/CD
+│
+├── sonar-project.properties         # Configuración SonarCloud
+├── README.md                        # Este archivo
+└── decisiones.md                    # Decisiones técnicas y justificaciones
 ```
-
-### 🔗 URLs y Endpoints
-
-#### Despliegue Actual (Render):
-- **Frontend QA**: `https://ingsw3-front-qa.onrender.com`
-- **Backend QA**: `https://ingsw3-back-qa.onrender.com`
-- **Frontend PROD**: `https://ingsw3-front-prod.onrender.com`
-- **Backend PROD**: `https://ingsw3-back-prod.onrender.com`
-
-#### API Endpoints:
-```
-POST   /api/auth/register     # User registration
-POST   /api/auth/login        # User login
-GET    /api/posts             # List all posts
-POST   /api/posts             # Create new post
-GET    /api/posts/:id         # Get post details
-DELETE /api/posts/:id         # Delete post (author only)
-GET    /api/posts/:id/comments    # Get post comments
-POST   /api/posts/:id/comments    # Add comment
-DELETE /api/posts/:postId/comments/:commentId  # Delete comment (author only)
-```
-
-### 🚀 Desarrollo vs Producción
-
-**Desarrollo Local:**
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8080`
-- Base de Datos: Railway PostgreSQL (ambos entornos)
-
-**Entorno de Producción:**
-- Frontend: Static site served by Render
-- Backend: Go server on Render
-- Base de Datos: Railway PostgreSQL (QA y PROD separados)
-
----
-
-## 📊 Cobertura de Tests
-
-### Backend (23 tests)
-
-| Componente  | Tests |                 Descripción                     |
-|-------------|-------|-------------------------------------------------|
-| AuthService | 11    | Register (6), Login (5)                         |
-| PostService | 12    | CreatePost (5), DeletePost (3), DeleteComment(4)|
-
-### Frontend (19 tests)
-
-| Componente | Tests |            Descripción             |
-|------------|-------|------------------------------------|
-| Login      | 5     | Renderizado, validaciones, estados |
-| PostList   | 5     | Renderizado, eliminación, permisos |
-| CommentList| 5     | Renderizado, eliminación, permisos |
-| authService| 4     | Login/Register con mocks HTTP      |
-
-**Total: 42 tests automatizados** ✅
-
----
-
-## 🎯 Conceptos Implementados
-
-### Testing
-- ✅ **Pruebas Unitarias** (backend + frontend)
-- ✅ **Patrón AAA** (Arrange, Act, Assert)
-- ✅ **Mocking** (Repository + HTTP)
-- ✅ **Aislamiento** de dependencias
-- ✅ **Casos edge** y validaciones
-
-### Arquitectura
-- ✅ **Separación de concerns** (capas)
-- ✅ **Dependency Injection** (interfaces)
-- ✅ **Repository Pattern**
-- ✅ **RESTful API**
-
-### DevOps
-- ✅ **CI/CD** con GitHub Actions
-- ✅ **Automatización** de tests
-- ✅ **Build automático**
-
----
-
-## 🔍 Comandos Útiles
-
-### Backend
-```bash
-# Compilar
-go build ./...
-
-# Tests (con mocks, no requieren DB)
-go test ./tests/services/... -v
-
-# Tests de integración (requieren PostgreSQL)
-go test ./... -v
-
-# Verificar dependencias
-go mod verify
-go mod tidy
-```
-
-### Frontend
-```bash
-# Desarrollo
-npm start
-
-# Tests
-npm test
-
-# Build producción
-npm run build
-
-# Limpiar node_modules
-rm -rf node_modules && npm install
-```
-
-### Git
-```bash
-# Status
-git status
-
-# Commit
-git add .
-git commit -m "mensaje"
-
-# Push
-git push origin main
-```
-
----
-
-## 📚 Documentación Adicional
-
-- **[decisiones.md](./decisiones.md)** - Decisiones técnicas y justificaciones
-- **[backend/tests/desc.md](./backend/tests/desc.md)** - Explicación de tests backend
-- **[backend/internal/database/desc.md](./backend/internal/database/desc.md)** - Explicación de base de datos
-- **[frontend/src/services/desc.md](./frontend/src/services/desc.md)** - Explicación de servicios HTTP
 
 ---
 
 ## 🐛 Troubleshooting
 
-### El backend no arranca
-```bash
-# Verificar que no esté corriendo en otro lado
-lsof -i :8080
-kill -9 PID_DEL_PROCESO
+### Backend no inicia
 
-# Verificar dependencias
+```bash
+# Verificar puerto 8080 disponible
+lsof -i :8080
+# Si está ocupado, matar el proceso:
+kill -9 <PID>
+
+# Verificar Go instalado correctamente
+go version
+
+# Limpiar y reinstalar dependencias
 cd backend
+rm go.sum
 go mod tidy
+go mod download
 ```
 
-### El frontend no arranca
+### Frontend no inicia
+
 ```bash
-# Reinstalar dependencias
+# Verificar puerto 3000 disponible
+lsof -i :3000
+
+# Limpiar cache y reinstalar
 cd frontend
 rm -rf node_modules package-lock.json
 npm install
+
+# Si falla con errores de Cypress
+npm install --save-dev cypress@13.15.2
 ```
 
-### Los tests fallan
+### Tests de Cypress fallan
+
 ```bash
-# Backend: Verificar que no dependa de BD
-rm backend/database.db
-go test ./tests/services/... -v  # Deben pasar igual
+# Verificar que backend y frontend estén corriendo
+curl http://localhost:8080/api/health
+curl http://localhost:3000
 
-# Frontend: Limpiar cache de Jest
-npm test -- --clearCache
-npm test
+# Limpiar cache de Cypress
+npx cypress cache clear
+npx cypress install
+
+# Ejecutar con logs detallados
+DEBUG=cypress:* npx cypress run
 ```
 
-### CORS errors
-Verificar que el backend tenga el middleware CORS configurado en `router/router.go`
+### Pipeline falla en GitHub Actions
+
+```bash
+# Verificar logs en:
+# GitHub > Actions > Click en el run fallido
+
+# Causas comunes:
+# 1. package-lock.json desincronizado
+cd frontend
+rm package-lock.json
+npm install
+git add package-lock.json
+git commit -m "fix: regenerar package-lock.json"
+git push
+
+# 2. Tests fallan localmente primero
+# Ejecutar todos los tests localmente antes de push
+```
 
 ---
 
-## 👥 Autores:
-**Carpineti Octavio - Kevin Massholder**  
-Ingenieria en sistemas de informacion - UCC
-Materia: Ingeniería de Software 3  
-Año: 2025
+## 📊 Métricas Alcanzadas - Integración TP7 + TP8
+
+### Quality Assurance (TP7)
+| Métrica | Objetivo | Resultado | Estado |
+|---------|----------|-----------|--------|
+| Backend Coverage | ≥70% | 86.5% | ✅ |
+| Frontend Coverage | ≥70% | 92.44% | ✅ |
+| Tests Unitarios | - | 74 tests | ✅ |
+| Tests E2E Cypress | - | 15 tests | ✅ |
+| **Total Tests** | - | **89 tests** | ✅ |
+| SonarCloud Quality Gate | Pass | PASSED | ✅ |
+| Issues Code Smells Resueltos | ≥3 | 47 issues | ✅ |
+| Duplications | <3% | 0.0% | ✅ |
+
+### Deployment & Contenedores (TP8)
+| Aspecto | Implementación | Estado |
+|---------|---------------|--------|
+| Base de Datos | PostgreSQL (Railway QA/PROD) | ✅ |
+| Backend Container | Go + multi-stage Docker | ✅ |
+| Frontend Container | React + multi-stage Docker | ✅ |
+| Container Registry | GitHub Container Registry | ✅ |
+| CI/CD Integration | Docker build + push en pipeline | ✅ |
+| Deploy QA | Render auto-deploy | ✅ |
+| Deploy PROD | Render manual approval | ✅ |
+| Environment Config | Variables QA vs PROD separadas | ✅ |
+
+### Arquitectura Integrada
+- ✅ **16 archivos modificados** para compatibilidad PostgreSQL
+- ✅ **Frontend environment-aware** (auto-detecta backend URLs)
+- ✅ **Pipeline fusionado**: calidad → contenedores → deploy
+- ✅ **89 tests automatizados** manteniendo cobertura alta
+- ✅ **47 issues SonarCloud** resueltos (constantes, duplicaciones)
+- ✅ **3 ambientes**: desarrollo local, QA, producción
+
+---
+
+
+
+**Alumno:** Octavio Carpineti - Kevin Massholder 
+**GitHub:** https://github.com/OctavioCarpineti  
+**Repositorio:** https://github.com/OctavioCarpineti/IngSWIII-TP07-Quality

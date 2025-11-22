@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"tp08-testing/internal/models"
-	"tp08-testing/internal/repository"
+	"ingsw3-tp7-tp8-integrated/internal/models"
+	"ingsw3-tp7-tp8-integrated/internal/repository"
 )
 
 // AuthService maneja la lógica de autenticación

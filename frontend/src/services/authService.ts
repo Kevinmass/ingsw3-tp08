@@ -16,7 +16,13 @@ const getApiBaseUrl = () => {
     return 'https://ingsw3-back-qa.onrender.com';
   }
 
-  // Fallback for other environments
+  // Fallback: use environment variable if set
+  const envUrl = (process && process.env && process.env.REACT_APP_BACKEND_URL) || undefined;
+  if (envUrl) {
+    return envUrl;
+  }
+
+  // Final fallback
   return '';
 };
 

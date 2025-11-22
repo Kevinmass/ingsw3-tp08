@@ -16,7 +16,7 @@ const getApiBaseUrl = () => {
     return 'https://ingsw3-back-qa.onrender.com';
   }
 
-  // Fallback for other environments
+  // Fallback: can be extended with environment variables if needed
   return '';
 };
 
