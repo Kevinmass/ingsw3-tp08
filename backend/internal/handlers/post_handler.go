@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"ingsw3-tp7-tp8-integrated/internal/models"
-	"ingsw3-tp7-tp8-integrated/internal/services"
+	"ingsw3-tp08/internal/models"
+	"ingsw3-tp08/internal/services"
 
 	"github.com/gorilla/mux"
 )

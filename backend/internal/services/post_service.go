@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"ingsw3-tp7-tp8-integrated/internal/models"
-	"ingsw3-tp7-tp8-integrated/internal/repository"
+	"ingsw3-tp08/internal/models"
+	"ingsw3-tp08/internal/repository"
 )
 
 // Constantes para mensajes de error
