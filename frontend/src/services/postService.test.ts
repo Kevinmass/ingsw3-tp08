@@ -22,6 +22,20 @@ describe('postService', () => {
             expect(mockedAxios.get).toHaveBeenCalledWith('http://localhost:8080/api/posts');
             expect(result).toEqual(mockPosts);
         });
+
+        test('maneja errores de red', async () => {
+            const error = new Error('Network Error');
+            mockedAxios.get.mockRejectedValueOnce(error);
+
+            await expect(postService.getAllPosts()).rejects.toEqual(error);
+        });
+
+        test('maneja errores del servidor', async () => {
+            const error = new Error('Internal Server Error');
+            mockedAxios.get.mockRejectedValueOnce(error);
+
+            await expect(postService.getAllPosts()).rejects.toEqual(error);
+        });
     });
 
     describe('getPostById', () => {
@@ -33,6 +47,20 @@ describe('postService', () => {
 
             expect(mockedAxios.get).toHaveBeenCalledWith('http://localhost:8080/api/posts/1');
             expect(result).toEqual(mockPost);
+        });
+
+        test('maneja errores de red', async () => {
+            const error = new Error('Network Error');
+            mockedAxios.get.mockRejectedValueOnce(error);
+
+            await expect(postService.getPostById(1)).rejects.toEqual(error);
+        });
+
+        test('maneja errores del servidor', async () => {
+            const error = new Error('Internal Server Error');
+            mockedAxios.get.mockRejectedValueOnce(error);
+
+            await expect(postService.getPostById(1)).rejects.toEqual(error);
         });
     });
 

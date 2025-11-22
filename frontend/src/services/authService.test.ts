@@ -46,6 +46,30 @@ describe('authService', () => {
         })
       ).rejects.toEqual(error);
     });
+
+    test('rechaza cuando hay un error de red', async () => {
+      const error = new Error('Network Error');
+      mockedAxios.post.mockRejectedValueOnce(error);
+
+      await expect(
+        authService.login({
+          email: 'test@example.com',
+          password: 'password'
+        })
+      ).rejects.toEqual(error);
+    });
+
+    test('rechaza cuando hay un error de servidor', async () => {
+      const error = new Error('Internal Server Error');
+      mockedAxios.post.mockRejectedValueOnce(error);
+
+      await expect(
+        authService.login({
+          email: 'test@example.com',
+          password: 'password'
+        })
+      ).rejects.toEqual(error);
+    });
   });
 
   describe('register', () => {
