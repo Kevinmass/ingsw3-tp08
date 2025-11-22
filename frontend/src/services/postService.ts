@@ -2,18 +2,23 @@ import axios from 'axios';
 import { Post, CreatePostRequest, Comment, CreateCommentRequest } from '../types';
 
 // Configure backend URLs for each environment
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost') {
+export const getApiBaseUrl = (hostname = window.location.hostname, envVar?: string) => {
+  if (hostname === 'localhost') {
     return 'http://localhost:8080';
   }
 
   // For Render production, use the backend service URL
   // Replace with your actual backend URL
-  const hostname = window.location.hostname;
   if (hostname.includes('front-prod')) {
     return 'https://ingsw3-back-prod.onrender.com';
   } else if (hostname.includes('front-qa')) {
     return 'https://ingsw3-back-qa.onrender.com';
+  }
+
+  // Fallback: use environment variable if set
+  const envUrl = envVar || (process && process.env && process.env.REACT_APP_BACKEND_URL) || undefined;
+  if (envUrl) {
+    return envUrl;
   }
 
   // Fallback: can be extended with environment variables if needed

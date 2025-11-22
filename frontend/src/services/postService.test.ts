@@ -1,8 +1,30 @@
 import axios from 'axios';
-import { postService, deleteComment } from './postService';
+import { postService, deleteComment, getApiBaseUrl } from './postService';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+describe('getApiBaseUrl', () => {
+  test('returns localhost URL for localhost hostname', () => {
+    expect(getApiBaseUrl('localhost')).toBe('http://localhost:8080');
+  });
+
+  test('returns production URL for front-prod hostname', () => {
+    expect(getApiBaseUrl('myapp-front-prod.onrender.com')).toBe('https://ingsw3-back-prod.onrender.com');
+  });
+
+  test('returns QA URL for front-qa hostname', () => {
+    expect(getApiBaseUrl('myapp-front-qa.onrender.com')).toBe('https://ingsw3-back-qa.onrender.com');
+  });
+
+  test('returns environment variable URL when set', () => {
+    expect(getApiBaseUrl('unknown.com', 'https://custom-backend.com')).toBe('https://custom-backend.com');
+  });
+
+  test('returns empty string when no conditions match', () => {
+    expect(getApiBaseUrl('unknown.com')).toBe('');
+  });
+});
 
 describe('postService', () => {
     beforeEach(() => {

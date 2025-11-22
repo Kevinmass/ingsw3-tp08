@@ -1,8 +1,30 @@
 import axios from 'axios';
-import { authService } from './authService';
+import { authService, getApiBaseUrl } from './authService';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+describe('getApiBaseUrl', () => {
+  test('returns localhost URL for localhost hostname', () => {
+    expect(getApiBaseUrl('localhost')).toBe('http://localhost:8080');
+  });
+
+  test('returns production URL for front-prod hostname', () => {
+    expect(getApiBaseUrl('myapp-front-prod.onrender.com')).toBe('https://ingsw3-back-prod.onrender.com');
+  });
+
+  test('returns QA URL for front-qa hostname', () => {
+    expect(getApiBaseUrl('myapp-front-qa.onrender.com')).toBe('https://ingsw3-back-qa.onrender.com');
+  });
+
+  test('returns environment variable URL when set', () => {
+    expect(getApiBaseUrl('unknown.com', 'https://custom-backend.com')).toBe('https://custom-backend.com');
+  });
+
+  test('returns empty string when no conditions match', () => {
+    expect(getApiBaseUrl('unknown.com')).toBe('');
+  });
+});
 
 describe('authService', () => {
   beforeEach(() => {
@@ -10,7 +32,7 @@ describe('authService', () => {
   });
 
   describe('login', () => {
-    test('llama a la API correctamente con credentials', async () => {
+    test('calls API correctly with credentials', async () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
@@ -35,7 +57,7 @@ describe('authService', () => {
       expect(result).toEqual(mockUser);
     });
 
-    test('rechaza cuando las credenciales son inválidas', async () => {
+    test('rejects when credentials are invalid', async () => {
       const error = new Error('Credenciales inválidas');
       mockedAxios.post.mockRejectedValueOnce(error);
 
@@ -47,20 +69,8 @@ describe('authService', () => {
       ).rejects.toEqual(error);
     });
 
-    test('rechaza cuando hay un error de red', async () => {
+    test('rejects when there is a network error', async () => {
       const error = new Error('Network Error');
-      mockedAxios.post.mockRejectedValueOnce(error);
-
-      await expect(
-        authService.login({
-          email: 'test@example.com',
-          password: 'password'
-        })
-      ).rejects.toEqual(error);
-    });
-
-    test('rechaza cuando hay un error de servidor', async () => {
-      const error = new Error('Internal Server Error');
       mockedAxios.post.mockRejectedValueOnce(error);
 
       await expect(
@@ -73,7 +83,7 @@ describe('authService', () => {
   });
 
   describe('register', () => {
-    test('llama a la API correctamente con datos de registro', async () => {
+    test('calls API correctly with registration data', async () => {
       const mockUser = {
         id: 1,
         email: 'newuser@example.com',
@@ -100,7 +110,7 @@ describe('authService', () => {
       expect(result).toEqual(mockUser);
     });
 
-    test('rechaza cuando el email ya existe', async () => {
+    test('rejects when email already exists', async () => {
       const error = new Error('el email ya está registrado');
       mockedAxios.post.mockRejectedValueOnce(error);
 
@@ -113,7 +123,7 @@ describe('authService', () => {
       ).rejects.toEqual(error);
     });
 
-    test('rechaza cuando la validación falla', async () => {
+    test('rejects when validation fails', async () => {
       const error = new Error('la contraseña debe tener al menos 6 caracteres');
       mockedAxios.post.mockRejectedValueOnce(error);
 
