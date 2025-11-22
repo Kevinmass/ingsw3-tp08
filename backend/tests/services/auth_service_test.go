@@ -3,8 +3,8 @@ package services
 import (
 	"testing"
 
-	"ingsw3-tp7-tp8-integrated/backend/tests/mocks"
-	"ingsw3-tp7-tp8-integrated/internal/models"
+	"ingsw3-tp08/internal/models"
+	"ingsw3-tp08/tests/mocks"
 	"ingsw3-tp7-tp8-integrated/internal/services"
 
 	"github.com/stretchr/testify/assert"
