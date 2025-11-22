@@ -1,4 +1,4 @@
-module ingsw3-tp7-tp8-integrated
+module ingsw3-tp08
 
 go 1.24.1
 

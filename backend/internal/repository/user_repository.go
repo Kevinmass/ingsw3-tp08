@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 
-	"ingsw3-tp7-tp8-integrated/backend/internal/models"
+	"ingsw3-tp7-tp8-integrated/internal/models"
 )
 
 // UserRepository define las operaciones sobre usuarios

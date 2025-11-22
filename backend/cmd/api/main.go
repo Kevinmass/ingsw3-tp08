@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 
-	"ingsw3-tp7-tp8-integrated/backend/internal/database"
-	"ingsw3-tp7-tp8-integrated/backend/internal/handlers"
-	"ingsw3-tp7-tp8-integrated/backend/internal/repository"
-	"ingsw3-tp7-tp8-integrated/backend/internal/router"
-	"ingsw3-tp7-tp8-integrated/backend/internal/services"
+	"ingsw3-tp08/internal/database"
+	"ingsw3-tp08/internal/handlers"
+	"ingsw3-tp08/internal/repository"
+	"ingsw3-tp08/internal/router"
+	"ingsw3-tp08/internal/services"
 )
 
 func main() {
