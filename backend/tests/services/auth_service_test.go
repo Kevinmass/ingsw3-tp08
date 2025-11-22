@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"ingsw3-tp08/internal/models"
+	"ingsw3-tp08/internal/services"
 	"ingsw3-tp08/tests/mocks"
-	"ingsw3-tp7-tp8-integrated/internal/services"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
