@@ -1,11 +1,8 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
 
-# Install git and ca-certificates (needed for go modules)
-RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
-
-# Create appuser
-RUN adduser -D -g '' appuser
+# Install git and ca-certificates (needed for go modules), create appuser
+RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates && adduser -D -g '' appuser
 
 # Set working directory
 WORKDIR /build
@@ -28,13 +25,10 @@ COPY . .
 RUN go build -ldflags="-w -s" -o main cmd/api/main.go
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.20
 
-# Install ca-certificates for SSL/TLS
-RUN apk --no-cache add ca-certificates
-
-# Create appuser
-RUN adduser -D -g '' appuser
+# Install ca-certificates for SSL/TLS and create appuser in one layer
+RUN apk --no-cache add ca-certificates && adduser -D -g '' appuser
 
 # Copy the binary from builder
 COPY --from=builder /build/main /app/main
