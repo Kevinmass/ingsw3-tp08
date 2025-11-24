@@ -132,9 +132,9 @@ jobs:
         working-directory: ./backend
         run: |
           go test ./tests/services/... -v -cover -coverpkg=./... -coverprofile=coverage/coverage.out
-          # Prefix file paths with backend/ to match sonar.sources
+          # Adjust file paths to match sonar.sources (backend/... instead of ingsw3-tp08/...)
           head -1 coverage/coverage.out > temp_coverage.out
-          tail -n +2 coverage/coverage.out | sed "s|^|backend/|" >> temp_coverage.out
+          tail -n +2 coverage/coverage.out | sed "s|^ingsw3-tp08/|backend/|" >> temp_coverage.out
           mv temp_coverage.out coverage/coverage.out
 
       - name: Run frontend tests for coverage
