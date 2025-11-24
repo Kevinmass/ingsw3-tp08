@@ -95,7 +95,13 @@ jobs:
           npm test -- --coverage --watchAll=false
           echo "📊 Frontend Coverage Report Generated"
 
-     
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
 
   sonarcloud:
     name: SonarCloud Analysis
