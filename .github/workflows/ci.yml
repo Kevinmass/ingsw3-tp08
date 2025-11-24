@@ -129,9 +129,13 @@ jobs:
         run: npm ci
 
       - name: Run backend tests for coverage
-        working-directory: .
+        working-directory: ./backend
         run: |
-          go test ./backend/tests/services/... -v -cover -coverpkg=./backend/... -coverprofile=backend/coverage/coverage.out
+          go test ./tests/services/... -v -cover -coverpkg=./... -coverprofile=coverage.out
+          # Prefix file paths with backend/ to match sonar.sources
+          head -1 coverage.out > temp_coverage.out
+          tail -n +2 coverage.out | sed "s|^|backend/|" >> temp_coverage.out
+          mv temp_coverage.out coverage.out
 
       - name: Run frontend tests for coverage
         working-directory: ./frontend
