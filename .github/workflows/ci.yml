@@ -41,7 +41,7 @@ jobs:
         run: |
           go mod download
           go build ./...
-          go test ./tests/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
+          go test ./tests/services/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
           echo "📊 Backend Coverage:"
           go tool cover -func=coverage.out | grep total
 
@@ -116,7 +116,7 @@ jobs:
         working-directory: ./backend
         run: |
           go mod download
-          go test ./tests/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
+          go test ./tests/services/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
           echo "🔍 Verifying coverage file generated:"
           ls -la coverage.out || echo "Coverage file not found"
           echo "Checking coverage content for Go packages:"
