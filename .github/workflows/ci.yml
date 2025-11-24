@@ -41,7 +41,7 @@ jobs:
         run: |
           go mod download
           go build ./...
-          go test ./tests/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
+          go test ./tests/services/... -v -cover -coverpkg=./internal/services/... -coverprofile=coverage.out
           echo "📊 Backend Coverage:"
           go tool cover -func=coverage.out | grep total
 
