@@ -82,8 +82,8 @@ func (h *PostHandler) GetPostByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post, err := h.postService.GetPostByID(id)
-	if err != nil {
-		respondWithError(w, http.StatusNotFound, err.Error())
+	if err != nil || post == nil {
+		respondWithError(w, http.StatusNotFound, "post no encontrado")
 		return
 	}
 

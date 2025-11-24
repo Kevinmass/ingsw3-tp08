@@ -12,6 +12,7 @@ import (
 	"ingsw3-tp08/internal/models"
 	"ingsw3-tp08/tests/mocks"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -187,9 +188,11 @@ func TestPostHandler_GetPostByID_Success(t *testing.T) {
 	mockPostService.On("GetPostByID", 1).Return(expectedPost, nil)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}", handler.GetPostByID)
 	req := httptest.NewRequest("GET", "/api/posts/1", nil)
 	rr := httptest.NewRecorder()
-	handler.GetPostByID(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusOK, rr.Code)
@@ -212,9 +215,11 @@ func TestPostHandler_GetPostByID_NotFound(t *testing.T) {
 	mockPostService.On("GetPostByID", 999).Return(nil, nil)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}", handler.GetPostByID)
 	req := httptest.NewRequest("GET", "/api/posts/999", nil)
 	rr := httptest.NewRecorder()
-	handler.GetPostByID(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusNotFound, rr.Code)
@@ -256,10 +261,12 @@ func TestPostHandler_DeletePost_Success(t *testing.T) {
 	mockPostService.On("DeletePost", 1, 1).Return(nil)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}", handler.DeletePost)
 	req := httptest.NewRequest("DELETE", "/api/posts/1", nil)
 	req.Header.Set("X-User-ID", "1")
 	rr := httptest.NewRecorder()
-	handler.DeletePost(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusOK, rr.Code)
@@ -282,10 +289,12 @@ func TestPostHandler_DeletePost_NotFound(t *testing.T) {
 	mockPostService.On("DeletePost", 999, 1).Return(serviceError)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}", handler.DeletePost)
 	req := httptest.NewRequest("DELETE", "/api/posts/999", nil)
 	req.Header.Set("X-User-ID", "1")
 	rr := httptest.NewRecorder()
-	handler.DeletePost(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusForbidden, rr.Code)
@@ -317,11 +326,13 @@ func TestPostHandler_CreateComment_Success(t *testing.T) {
 	mockPostService.On("CreateComment", 1, mock.AnythingOfType("*models.CreateCommentRequest"), 1).Return(expectedComment, nil)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}/comments", handler.CreateComment)
 	body, _ := json.Marshal(createCommentRequest)
 	req := httptest.NewRequest("POST", "/api/posts/1/comments", bytes.NewBuffer(body))
 	req.Header.Set("X-User-ID", "1")
 	rr := httptest.NewRecorder()
-	handler.CreateComment(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusCreated, rr.Code)
@@ -342,11 +353,13 @@ func TestPostHandler_CreateComment_InvalidJSON(t *testing.T) {
 	handler := handlers.NewPostHandler(mockPostService)
 
 	// ACT - Send invalid JSON
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}/comments", handler.CreateComment)
 	invalidJSON := `{"content": "Test comment", "invalid": }`
 	req := httptest.NewRequest("POST", "/api/posts/1/comments", bytes.NewBufferString(invalidJSON))
 	req.Header.Set("X-User-ID", "1")
 	rr := httptest.NewRecorder()
-	handler.CreateComment(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
@@ -371,11 +384,13 @@ func TestPostHandler_CreateComment_ServiceError(t *testing.T) {
 	mockPostService.On("CreateComment", 1, mock.AnythingOfType("*models.CreateCommentRequest"), 1).Return(nil, serviceError)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}/comments", handler.CreateComment)
 	body, _ := json.Marshal(createCommentRequest)
 	req := httptest.NewRequest("POST", "/api/posts/1/comments", bytes.NewBuffer(body))
 	req.Header.Set("X-User-ID", "1")
 	rr := httptest.NewRecorder()
-	handler.CreateComment(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
@@ -410,9 +425,11 @@ func TestPostHandler_GetComments_Success(t *testing.T) {
 	mockPostService.On("GetCommentsByPostID", 1).Return(expectedComments, nil)
 
 	// ACT
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts/{id}/comments", handler.GetComments)
 	req := httptest.NewRequest("GET", "/api/posts/1/comments", nil)
 	rr := httptest.NewRecorder()
-	handler.GetComments(rr, req)
+	r.ServeHTTP(rr, req)
 
 	// ASSERT
 	assert.Equal(t, http.StatusOK, rr.Code)
