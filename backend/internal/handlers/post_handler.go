@@ -22,11 +22,11 @@ const (
 
 // PostHandler maneja las peticiones HTTP de posts
 type PostHandler struct {
-	postService *services.PostService
+	postService services.PostServiceInterface
 }
 
 // NewPostHandler crea una nueva instancia
-func NewPostHandler(postService *services.PostService) *PostHandler {
+func NewPostHandler(postService services.PostServiceInterface) *PostHandler {
 	return &PostHandler{
 		postService: postService,
 	}

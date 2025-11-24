@@ -10,11 +10,11 @@ import (
 
 // AuthHandler maneja las peticiones HTTP de autenticación
 type AuthHandler struct {
-	authService *services.AuthService
+	authService services.AuthServiceInterface
 }
 
 // NewAuthHandler crea una nueva instancia
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+func NewAuthHandler(authService services.AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}

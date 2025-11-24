@@ -8,6 +8,17 @@ import (
 	"ingsw3-tp08/internal/repository"
 )
 
+// PostServiceInterface define las operaciones del servicio de posts
+type PostServiceInterface interface {
+	CreatePost(req *models.CreatePostRequest, userID int) (*models.Post, error)
+	GetAllPosts() ([]*models.Post, error)
+	GetPostByID(id int) (*models.Post, error)
+	DeletePost(postID int, userID int) error
+	CreateComment(postID int, req *models.CreateCommentRequest, userID int) (*models.Comment, error)
+	GetCommentsByPostID(postID int) ([]*models.Comment, error)
+	DeleteComment(postID int, commentID int, userID int) error
+}
+
 // Constantes para mensajes de error
 const (
 	ErrUserNotFound = "usuario no encontrado"

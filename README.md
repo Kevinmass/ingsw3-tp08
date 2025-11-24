@@ -35,7 +35,7 @@ Mini red social desarrollada con React (frontend) y Go (backend) que implementa:
 **Stack Tecnológico:**
 - **Backend:** Go 1.24 + PostgreSQL (Railway/Render)
 - **Frontend:** React 18 + TypeScript
-- **Testing:** Go testing + Jest + Cypress (74 unit + 15 E2E = 89 tests)
+- **Testing:** Go testing + Jest + Cypress (107 tests: 89 unit + 18 handlers + integration + 15 E2E)
 - **Containers:** Docker + GitHub Container Registry
 - **Deployment:** Render (QA/PROD) + Railway PostgreSQL
 - **Quality:** SonarCloud (47 issues fixed) + Code Coverage (86.5%/92.44%)
@@ -200,12 +200,12 @@ serve -s build -l 3000
 
 ## 🧪 Ejecución de Tests
 
-### Tests Unitarios - Backend
+### Tests Unitarios - Backend Services
 
 ```bash
 cd backend
 
-# Ejecutar todos los tests
+# Ejecutar tests de servicios (35 tests)
 go test ./tests/services/... -v
 
 # Ejecutar tests con coverage
@@ -226,8 +226,69 @@ go tool cover -func=coverage.out
 ...
 PASS
 coverage: 86.5% of statements in ./internal/services
-ok      tp06-testing/tests/services     0.537s
+ok      ingsw3-tp08/tests/services     0.537s
 ```
+
+### Tests Unitarios - Backend Handlers
+
+```bash
+cd backend
+
+# Ejecutar tests de handlers (18 tests - requieren mocks)
+go test ./internal/handlers/... -v
+
+# Con coverage
+go test ./internal/handlers/... -v -cover
+```
+
+**Resultado esperado:**
+```
+=== RUN   TestAuthHandler_Register_Success
+--- PASS: TestAuthHandler_Register_Success (0.00s)
+...
+PASS
+coverage: 50.4% of statements
+ok      ingsw3-tp08/internal/handlers   0.763s
+```
+
+### Tests de Integración - Repositories
+
+```bash
+cd backend
+
+# Tests de repositorio (requiere Docker para Postgres container)
+go test ./tests/integration/... -v
+
+# Con coverage (cubre repositories + cualquier paso adicional)
+go test ./tests/integration/... -v -cover
+```
+
+**Resultado esperado:**
+```
+=== RUN   TestUserRepositoryIntegrationTestSuite/TestCreate_Success
+--- PASS: TestUserRepositoryIntegrationTestSuite/TestCreate_Success (2.15s)
+...
+PASS
+ok      ingsw3-tp08/tests/integration     5.823s
+```
+
+### Tests Combinados - Full Backend Coverage
+
+```bash
+cd backend
+
+# Todos los tests unitarios + integración (requiere Docker)
+go test ./tests/services/... ./internal/handlers/... ./tests/integration/... -v -cover -coverpkg=./...
+
+# Ver coverage completo
+go tool cover -func=combined.out
+```
+
+**Cobertura estimada después de mejoras:**
+- **Services**: 86.5%
+- **Handlers**: 50.4%
+- **Repositories**: ~85% (con integración completa)
+- **Total Backend**: ~75-80%
 
 ### Tests Unitarios - Frontend
 
@@ -472,14 +533,15 @@ tp07-quality/
 │   │   └── api/
 │   │       └── main.go              # Entry point del servidor
 │   ├── internal/
-│   │   ├── handlers/                # HTTP handlers (POST, GET, DELETE)
+│   │   ├── handlers/                # HTTP handlers (50.4% coverage)
 │   │   │   ├── auth_handler.go
 │   │   │   ├── post_handler.go
-│   │   │   └── utils.go
+│   │   │   ├── auth_handler_test.go   # 6 tests handler unitarios
+│   │   │   └── post_handler_test.go   # 12 tests handler unitarios
 │   │   ├── services/                # Lógica de negocio (86.5% coverage)
 │   │   │   ├── auth_service.go
 │   │   │   └── post_service.go
-│   │   ├── repository/              # Acceso a datos (interfaz)
+│   │   ├── repository/              # Acceso a datos (~85% coverage)
 │   │   │   ├── user_repository.go
 │   │   │   └── post_repository.go
 │   │   ├── models/                  # Estructuras de datos
@@ -490,12 +552,17 @@ tp07-quality/
 │   │   └── router/                  # Configuración de rutas
 │   │       └── router.go
 │   ├── tests/
-│   │   ├── services/                # 35 tests unitarios
+│   │   ├── services/                # 35 tests unitarios + covers services 86.5%
 │   │   │   ├── auth_service_test.go
 │   │   │   └── post_service_test.go
-│   │   └── mocks/                   # Mocks para testing
-│   │       ├── mock_user_repository.go
-│   │       └── mock_post_repository.go
+│   │   ├── mocks/                   # Mocks para testing
+│   │   │   ├── mock_user_repository.go
+│   │   │   ├── mock_post_repository.go
+│   │   │   ├── auth_service_mock.go    # Mock de AuthService
+│   │   │   └── post_service_mock.go    # Mock de PostService
+│   │   └── integration/             # Tests de integración con DB real
+│   │       ├── test_helpers.go         # Setup Postgres container
+│   │       └── user_repository_integration_test.go  # ~6 tests repo integración
 │   ├── go.mod
 │   └── go.sum
 │

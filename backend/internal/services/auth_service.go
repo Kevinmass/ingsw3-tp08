@@ -8,6 +8,12 @@ import (
 	"ingsw3-tp08/internal/repository"
 )
 
+// AuthServiceInterface define las operaciones del servicio de autenticación
+type AuthServiceInterface interface {
+	Register(req *models.RegisterRequest) (*models.User, error)
+	Login(creds *models.Credentials) (*models.User, error)
+}
+
 // AuthService maneja la lógica de autenticación
 type AuthService struct {
 	userRepo repository.UserRepository
