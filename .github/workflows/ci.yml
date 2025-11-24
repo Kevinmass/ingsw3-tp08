@@ -57,8 +57,9 @@ jobs:
           echo "✅ Coverage $COVERAGE% meets threshold"
 
       - name: Upload backend coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./backend/coverage.out
           flags: backend
           name: backend-coverage
@@ -95,8 +96,9 @@ jobs:
           echo "📊 Frontend Coverage Report Generated"
 
       - name: Upload frontend coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./frontend/coverage/coverage-final.json
           flags: frontend
           name: frontend-coverage
