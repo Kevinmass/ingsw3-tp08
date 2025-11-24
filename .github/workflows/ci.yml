@@ -119,6 +119,8 @@ jobs:
           go test ./tests/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
           echo "🔍 Verifying coverage file generated:"
           ls -la coverage.out || echo "Coverage file not found"
+          echo "Checking coverage content for Go packages:"
+          go tool cover -func=coverage.out | head -5 || echo "Coverage file may be invalid"
 
       - name: Run frontend tests for coverage
         working-directory: ./frontend
