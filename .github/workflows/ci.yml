@@ -41,7 +41,7 @@ jobs:
         run: |
           go mod download
           go build ./...
-          go test ./tests/services/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
+          go test ./tests/services/... -v -cover -coverpkg=./internal/services/... -coverprofile=coverage.out
           echo "📊 Backend Coverage:"
           go tool cover -func=coverage.out | grep total
 
@@ -50,8 +50,8 @@ jobs:
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Backend coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
-            echo "❌ Coverage $COVERAGE% is below 40%"
+          if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below 70%"
             exit 1
           fi
           echo "✅ Coverage $COVERAGE% meets threshold"
@@ -132,11 +132,7 @@ jobs:
         working-directory: ./backend
         run: |
           go mod download
-          go test ./tests/services/... -v -cover -coverpkg=./internal/... -coverprofile=coverage.out
-          echo "🔍 Verifying coverage file generated:"
-          ls -la coverage.out || echo "Coverage file not found"
-          echo "Checking coverage content for Go packages:"
-          go tool cover -func=coverage.out | head -5 || echo "Coverage file may be invalid"
+          go test ./tests/services/... -v -cover -coverpkg=./internal/services/... -coverprofile=coverage.out
 
       - name: Run frontend tests for coverage
         working-directory: ./frontend

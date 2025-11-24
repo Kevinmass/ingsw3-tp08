@@ -22,11 +22,11 @@ const (
 
 // PostHandler maneja las peticiones HTTP de posts
 type PostHandler struct {
-	postService services.PostServiceInterface
+	postService *services.PostService
 }
 
 // NewPostHandler crea una nueva instancia
-func NewPostHandler(postService services.PostServiceInterface) *PostHandler {
+func NewPostHandler(postService *services.PostService) *PostHandler {
 	return &PostHandler{
 		postService: postService,
 	}
@@ -82,8 +82,8 @@ func (h *PostHandler) GetPostByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post, err := h.postService.GetPostByID(id)
-	if err != nil || post == nil {
-		respondWithError(w, http.StatusNotFound, "post no encontrado")
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
 

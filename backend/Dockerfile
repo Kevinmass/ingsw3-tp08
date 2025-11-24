@@ -7,7 +7,7 @@ RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificat
 # Set working directory
 WORKDIR /build
 
-# Copy go.mod and go.sum first for better caching
+# Copy go.mod and go.sum
 COPY go.mod go.sum ./
 
 # Download dependencies
@@ -18,11 +18,11 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
 
-# Copy source code - use .dockerignore to filter out unnecessary files
+# Copy source code
 COPY . .
 
 # Build the application
-RUN go build -ldflags="-w -s" -o main ./cmd/api/main.go
+RUN go build -ldflags="-w -s" -o main cmd/api/main.go
 
 # Final stage
 FROM alpine:3.20
