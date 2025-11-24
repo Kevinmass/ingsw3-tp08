@@ -108,7 +108,8 @@ func createTables(db *sql.DB) error {
 func CleanupTestDB(db *sql.DB) error {
 	tables := []string{"comments", "posts", "users"}
 	for _, table := range tables {
-		if _, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table)); err != nil {
+		query := "TRUNCATE TABLE " + table + " CASCADE"
+		if _, err := db.Exec(query); err != nil {
 			return fmt.Errorf("failed to truncate table %s: %w", table, err)
 		}
 	}

@@ -11,6 +11,15 @@ database.db
 .env.development
 .env.production
 
+# Secret files
+*.key
+*.pem
+*.p12
+*.p8
+*.der
+id_rsa*
+secret*
+
 # Logs
 *.log
 logs/

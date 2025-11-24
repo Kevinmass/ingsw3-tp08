@@ -288,3 +288,196 @@ func TestPostHandler_DeletePost_PermissionDenied(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, w.Code)
 	mockPostService.AssertExpectations(t)
 }
+
+func TestPostHandler_CreateComment_Success(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	req := models.CreateCommentRequest{
+		Content: "Test Comment",
+	}
+
+	expectedComment := &models.Comment{
+		ID:       1,
+		PostID:   1,
+		UserID:   1,
+		Username: "testuser",
+		Content:  "Test Comment",
+	}
+
+	mockPostService.On("CreateComment", 1, &req, 1).Return(expectedComment, nil)
+
+	body, _ := json.Marshal(req)
+	httpReq := httptest.NewRequest(http.MethodPost, "/api/posts/1/comments", bytes.NewBuffer(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-User-ID", "1")
+	httpReq = mux.SetURLVars(httpReq, map[string]string{"id": "1"})
+
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.CreateComment(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusCreated, w.Code)
+	mockPostService.AssertExpectations(t)
+
+	var response models.Comment
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedComment.ID, response.ID)
+}
+
+func TestPostHandler_CreateComment_InvalidJSON(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	httpReq := httptest.NewRequest(http.MethodPost, "/api/posts/1/comments", bytes.NewBufferString("invalid json"))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq = mux.SetURLVars(httpReq, map[string]string{"id": "1"})
+
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.CreateComment(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, ErrInvalidJSON, response["error"])
+
+	mockPostService.AssertNotCalled(t, "CreateComment", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestPostHandler_CreateComment_InvalidPostID(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	req := models.CreateCommentRequest{
+		Content: "Test Comment",
+	}
+
+	body, _ := json.Marshal(req)
+	httpReq := httptest.NewRequest(http.MethodPost, "/api/posts/abc/comments", bytes.NewBuffer(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-User-ID", "1")
+
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.CreateComment(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, ErrInvalidID, response["error"])
+
+	mockPostService.AssertNotCalled(t, "CreateComment", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestPostHandler_GetComments_Success(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	expectedComments := []*models.Comment{
+		{ID: 1, PostID: 1, UserID: 1, Username: "user1", Content: "Comment 1"},
+		{ID: 2, PostID: 1, UserID: 2, Username: "user2", Content: "Comment 2"},
+	}
+
+	mockPostService.On("GetCommentsByPostID", 1).Return(expectedComments, nil)
+
+	httpReq := httptest.NewRequest(http.MethodGet, "/api/posts/1/comments", nil)
+	httpReq = mux.SetURLVars(httpReq, map[string]string{"id": "1"})
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.GetComments(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockPostService.AssertExpectations(t)
+
+	var response []*models.Comment
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Len(t, response, 2)
+}
+
+func TestPostHandler_GetComments_InvalidPostID(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	httpReq := httptest.NewRequest(http.MethodGet, "/api/posts/abc/comments", nil)
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.GetComments(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, ErrInvalidID, response["error"])
+
+	mockPostService.AssertNotCalled(t, "GetCommentsByPostID", mock.Anything)
+}
+
+func TestPostHandler_DeleteComment_Success(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	mockPostService.On("DeleteComment", 1, 1, 1).Return(nil)
+
+	httpReq := httptest.NewRequest(http.MethodDelete, "/api/posts/1/comments/1", nil)
+	httpReq.Header.Set("X-User-ID", "1")
+	httpReq = mux.SetURLVars(httpReq, map[string]string{"postId": "1", "commentId": "1"})
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.DeleteComment(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockPostService.AssertExpectations(t)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Comentario eliminado", response["message"])
+}
+
+func TestPostHandler_DeleteComment_InvalidPostID(t *testing.T) {
+	// ARRANGE
+	mockPostService := new(mocks.MockPostService)
+	postHandler := NewPostHandler(mockPostService)
+
+	httpReq := httptest.NewRequest(http.MethodDelete, "/api/posts/abc/comments/1", nil)
+	w := httptest.NewRecorder()
+
+	// ACT
+	postHandler.DeleteComment(w, httpReq)
+
+	// ASSERT
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Post ID inválido", response["error"])
+
+	mockPostService.AssertNotCalled(t, "DeleteComment", mock.Anything, mock.Anything, mock.Anything)
+}
