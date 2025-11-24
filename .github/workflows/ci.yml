@@ -151,7 +151,7 @@ jobs:
       - name: Run backend tests for coverage
         working-directory: ./backend
         run: |
-          go test ./tests/services/... -v -cover -coverpkg=./... -coverprofile=coverage/coverage.out
+          go test ./tests/services/... ./internal/handlers/... -v -cover -coverpkg=./... -coverprofile=coverage/coverage.out
           # Adjust file paths to match sonar.sources (backend/... instead of ingsw3-tp08/...)
           head -1 coverage/coverage.out > temp_coverage.out
           tail -n +2 coverage/coverage.out | sed "s|^ingsw3-tp08/|backend/|" >> temp_coverage.out
