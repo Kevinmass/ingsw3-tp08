@@ -324,7 +324,7 @@ jobs:
   deploy-qa:
     name: Deploy QA (Back + Front) to Render
     runs-on: ubuntu-latest
-    needs: docker-build-push
+    needs: [quality-gate, docker-build-push]
 
     steps:
       - name: Trigger backend QA deploy
@@ -373,24 +373,21 @@ jobs:
       - name: Production Deployment Complete
         run: echo "Production deployment successful!"
 
-  quality-summary:
-    name: Quality Gate Summary
+  quality-gate:
+    name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, cypress-e2e, sonarcloud, docker-build-push]
-    if: always()
+    needs: [backend-tests, frontend-tests, backend-build, frontend-build, cypress-e2e, sonarcloud]
 
     steps:
       - name: Quality Gate Results
         run: |
           echo "📊 TP07 + TP08 Integrated - Quality Gates Summary"
           echo "=========================================================="
-          echo "✅ Backend Tests: 35 tests + coverage 86.5%"
-          echo "✅ Frontend Tests: 39 tests + coverage 92.44%"
-          echo "✅ Cypress E2E Tests: 15 tests"
-          echo "✅ Total Tests: 89"
-          echo "✅ SonarCloud: Quality Gate Passed"
-          echo "✅ Docker Build: Backend + Frontend images pushed"
-          echo "✅ Deploy QA: Automatic deployment completed"
-          echo "✅ Deploy PROD: Waiting for manual approval"
+          echo "✅ Backend Tests: Passed"
+          echo "✅ Frontend Tests: Passed"
+          echo "✅ Backend Build: Successful"
+          echo "✅ Frontend Build: Successful"
+          echo "✅ Cypress E2E Tests: Passed"
+          echo "✅ SonarCloud Analysis: Completed"
           echo "=========================================================="
           echo "🎯 All quality gates passed! Ready for deployment."
