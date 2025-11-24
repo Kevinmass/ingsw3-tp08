@@ -251,7 +251,7 @@ coverage: 50.4% of statements
 ok      ingsw3-tp08/internal/handlers   0.763s
 ```
 
-### Tests de Integración - Repositories
+### Tests de Integración - Repositories (Local Only)
 
 ```bash
 cd backend
@@ -259,7 +259,7 @@ cd backend
 # Tests de repositorio (requiere Docker para Postgres container)
 go test ./tests/integration/... -v
 
-# Con coverage (cubre repositories + cualquier paso adicional)
+# Con coverage (cubre repositories ~85% + database setup)
 go test ./tests/integration/... -v -cover
 ```
 
@@ -271,6 +271,8 @@ go test ./tests/integration/... -v -cover
 PASS
 ok      ingsw3-tp08/tests/integration     5.823s
 ```
+
+> **Note:** Integration tests require Docker and are run locally. CI focuses on unit tests for faster feedback.
 
 ### Tests Combinados - Full Backend Coverage
 

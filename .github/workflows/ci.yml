@@ -36,25 +36,45 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Run backend tests with coverage
+      - name: Run backend tests with per-package coverage
         working-directory: ./backend
         run: |
           go mod download
           go build ./...
-          go test ./tests/services/... ./internal/handlers/... -v -cover -coverpkg=./... -coverprofile=coverage.out
-          echo "📊 Backend Coverage:"
-          go tool cover -func=coverage.out | grep total
 
-      - name: Check backend coverage threshold
+          # Services coverage
+          go test ./tests/services/... -v -cover -coverpkg=./internal/services/... -coverprofile=services.out
+          echo "📊 Services Coverage:"
+          go tool cover -func=services.out | grep total
+
+          # Handlers coverage
+          go test ./internal/handlers/... -v -cover -coverpkg=./internal/handlers/... -coverprofile=handlers.out
+          echo "📊 Handlers Coverage:"
+          go tool cover -func=handlers.out | grep total
+
+          # Combined coverage for SonarCloud upload
+          go test ./tests/services/... ./internal/handlers/... -v -cover -coverpkg=./... -coverprofile=coverage.out
+
+      - name: Check backend coverage thresholds
         working-directory: ./backend
         run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-          echo "Backend coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 70" | bc -l) )); then
-            echo "❌ Coverage $COVERAGE% is below 70%"
+          # Check services coverage
+          SERVICES_COVERAGE=$(go tool cover -func=services.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Services coverage: $SERVICES_COVERAGE%"
+          if (( $(echo "$SERVICES_COVERAGE < 80" | bc -l) )); then
+            echo "❌ Services coverage $SERVICES_COVERAGE% is below 80%"
             exit 1
           fi
-          echo "✅ Coverage $COVERAGE% meets threshold"
+
+          # Check handlers coverage
+          HANDLERS_COVERAGE=$(go tool cover -func=handlers.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Handlers coverage: $HANDLERS_COVERAGE%"
+          if (( $(echo "$HANDLERS_COVERAGE < 45" | bc -l) )); then
+            echo "❌ Handlers coverage $HANDLERS_COVERAGE% is below 45%"
+            exit 1
+          fi
+
+          echo "✅ All coverage thresholds met"
 
       - name: Upload backend coverage
         uses: codecov/codecov-action@v5
