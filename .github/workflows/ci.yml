@@ -129,10 +129,9 @@ jobs:
         run: npm ci
 
       - name: Run backend tests for coverage
-        working-directory: ./backend
+        working-directory: .
         run: |
-          go mod download
-          go test ./tests/services/... -v -cover -coverpkg=./... -coverprofile=coverage/coverage.out
+          go test ./backend/tests/services/... -v -cover -coverpkg=./backend/... -coverprofile=backend/coverage/coverage.out
 
       - name: Run frontend tests for coverage
         working-directory: ./frontend
