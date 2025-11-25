@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -14,8 +15,45 @@ import (
 var testDB *sql.DB
 var postgresContainer *postgres.PostgresContainer
 
-// SetupTestDB starts a PostgreSQL container and initializes the database
+// SetupTestDB starts a PostgreSQL database for testing
 func SetupTestDB() (*sql.DB, func(), error) {
+	// For CI, use the GitHub Actions service
+	if os.Getenv("CI") == "true" {
+		return setupCIDB()
+	}
+	// For local development, use testcontainers
+	return setupLocalDB()
+}
+
+// setupCIDB uses the GitHub Actions postgres service
+func setupCIDB() (*sql.DB, func(), error) {
+	// GitHub Actions service config (matches postgres service in workflow)
+	connStr := "host=localhost port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	// Create tables
+	if err := createTables(db); err != nil {
+		db.Close()
+		return nil, nil, fmt.Errorf("failed to create tables: %w", err)
+	}
+
+	cleanup := func() {
+		db.Close()
+	}
+
+	return db, cleanup, nil
+}
+
+// setupLocalDB uses testcontainers for local testing
+func setupLocalDB() (*sql.DB, func(), error) {
 	ctx := context.Background()
 
 	pgContainer, err := postgres.RunContainer(ctx,
