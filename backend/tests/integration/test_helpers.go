@@ -25,7 +25,7 @@ func SetupTestDB() (*sql.DB, func(), error) {
 		postgres.WithPassword("testpass"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).WithStartupTimeout(5)),
+				WithOccurrence(2).WithStartupTimeout(30)),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start postgres container: %w", err)
