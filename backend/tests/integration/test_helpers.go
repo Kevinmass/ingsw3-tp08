@@ -30,7 +30,8 @@ func SetupTestDB() (*sql.DB, func(), error) {
 // setupCIDB uses the GitHub Actions postgres service
 func setupCIDB() (*sql.DB, func(), error) {
 	// GitHub Actions service config (matches postgres service in workflow)
-	connStr := "host=localhost port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
+	// Use 127.0.0.1 to force IPv4 connection (GitHub Actions resolves localhost to IPv6 [::1] which fails)
+	connStr := "host=127.0.0.1 port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
