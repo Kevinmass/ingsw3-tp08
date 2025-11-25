@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	_ "github.com/lib/pq"
 )
 
 var testDB *sql.DB
@@ -29,15 +30,26 @@ func SetupTestDB() (*sql.DB, func(), error) {
 // setupCIDB uses the GitHub Actions postgres service
 func setupCIDB() (*sql.DB, func(), error) {
 	// GitHub Actions service config (matches postgres service in workflow)
-	connStr := "host=localhost port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
+	connStr := "host=postgres port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	if err := db.Ping(); err != nil {
-		return nil, nil, fmt.Errorf("failed to ping database: %w", err)
+	// Retry ping up to 5 times with 2-second delay if service is starting up
+	var pingErr error
+	for attempts := 1; attempts <= 5; attempts++ {
+		if pingErr = db.Ping(); pingErr == nil {
+			break
+		}
+		if attempts < 5 {
+			log.Printf("Database ping attempt %d failed: %v, retrying in 2 seconds...", attempts, pingErr)
+			time.Sleep(2 * time.Second)
+		}
+	}
+	if pingErr != nil {
+		return nil, nil, fmt.Errorf("failed to ping database after retries: %w", pingErr)
 	}
 
 	// Create tables
