@@ -7,8 +7,6 @@ import (
 	"ingsw3-tp08/internal/models"
 	"ingsw3-tp08/internal/repository"
 
-	_ "github.com/lib/pq"
-
 	"github.com/stretchr/testify/suite"
 )
 

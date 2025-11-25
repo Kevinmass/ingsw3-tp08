@@ -5,10 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
-	"time"
 
-	_ "github.com/lib/pq"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -17,78 +14,8 @@ import (
 var testDB *sql.DB
 var postgresContainer *postgres.PostgresContainer
 
-// SetupTestDB starts a PostgreSQL database for testing
+// SetupTestDB starts a PostgreSQL container and initializes the database
 func SetupTestDB() (*sql.DB, func(), error) {
-	// For CI, use the GitHub Actions service
-	if os.Getenv("CI") == "true" {
-		return setupCIDB()
-	}
-	// For local development, use testcontainers
-	return setupLocalDB()
-}
-
-// setupCIDB uses the GitHub Actions postgres service
-func setupCIDB() (*sql.DB, func(), error) {
-	// GitHub Actions service config (matches postgres service in workflow)
-	// Use 127.0.0.1 to force IPv4 connection (GitHub Actions resolves localhost to IPv6 [::1] which fails)
-	connStr := "host=127.0.0.1 port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
-
-	// First ensure PostgreSQL is fully initialized by connecting to default postgres db
-	// pg_isready health check only waits for connection readiness, not database initialization
-	initConnStr := "host=127.0.0.1 port=5432 user=testuser password=testpass dbname=postgres sslmode=disable"
-
-	initDB, err := sql.Open("postgres", initConnStr)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open initialization database: %w", err)
-	}
-	defer initDB.Close()
-
-	// Wait for the default postgres database to be fully ready
-	for attempts := 1; attempts <= 10; attempts++ {
-		if err = initDB.Ping(); err == nil {
-			// Verify the testdb database exists by querying it
-			var dbExists int
-			query := "SELECT 1 FROM pg_database WHERE datname = 'testdb'"
-			if err = initDB.QueryRow(query).Scan(&dbExists); err == nil {
-				log.Printf("Database initialization confirmed after %d attempts", attempts)
-				break
-			}
-		}
-		if attempts < 10 {
-			log.Printf("Database initialization check %d failed: %v, retrying in 3 seconds...", attempts, err)
-			time.Sleep(3 * time.Second)
-		} else {
-			return nil, nil, fmt.Errorf("database not fully initialized after retries: %w", err)
-		}
-	}
-
-	// Now connect to the actual test database
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open database: %w", err)
-	}
-
-	// Final ping to ensure testdb is accessible
-	if err = db.Ping(); err != nil {
-		db.Close()
-		return nil, nil, fmt.Errorf("failed to ping test database: %w", err)
-	}
-
-	// Create tables
-	if err := createTables(db); err != nil {
-		db.Close()
-		return nil, nil, fmt.Errorf("failed to create tables: %w", err)
-	}
-
-	cleanup := func() {
-		db.Close()
-	}
-
-	return db, cleanup, nil
-}
-
-// setupLocalDB uses testcontainers for local testing
-func setupLocalDB() (*sql.DB, func(), error) {
 	ctx := context.Background()
 
 	pgContainer, err := postgres.RunContainer(ctx,
@@ -98,7 +25,7 @@ func setupLocalDB() (*sql.DB, func(), error) {
 		postgres.WithPassword("testpass"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).WithStartupTimeout(30)),
+				WithOccurrence(2).WithStartupTimeout(5)),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start postgres container: %w", err)
