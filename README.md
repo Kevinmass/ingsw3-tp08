@@ -54,10 +54,10 @@ Axios Environment-aware │    ├── auth_handler.go
 Auto-detect Backend URL  │    └── post_handler.go
                         │
                         │    Services     (business logic)
-                        ├── auth_service.go      ───┐
-                        └── post_service.go       ┌─┼───── Repository Interface
-                              Validaciones        │ │       (mocks for testing)
-                              Permisos            │ │       PostgreSQLUserRepository
+                        ├── auth_service.go     ───┐
+                        └── post_service.go      ┌─┼───── Repository Interface
+                              Validaciones       │ │       (mocks for testing)
+                              Permisos           │ │       PostgreSQLUserRepository
                                                  │ │       PostgreSQLPostRepository
                         Repository               │ │
                         ├── user_repository.go ──┘ │
@@ -173,6 +173,38 @@ npm start
 El frontend estará corriendo en `http://localhost:3000`
 
 Se abrirá automáticamente en tu navegador.
+
+### Opción 2: Ejecución Local con Cypress (Automática)
+
+Para ejecutar todo el proyecto localmente (incluyendo base de datos mock, backend, frontend) y abrir automáticamente la interfaz de Cypress para tests E2E:
+
+```bash
+# Desde la raíz del proyecto
+# Asegúrate de tener Docker, Go, Node.js y npm instalados
+
+# Ejecutar todo automáticamente (base de datos + backend + frontend + cypress)
+./run-local.sh
+
+# Si no tienes permisos de ejecución (en Linux/Mac) o usas git bash en Windows:
+chmod +x run-local-db.sh run-local.sh
+./run-local.sh
+
+# En Windows CMD/PowerShell, ejecutar con bash:
+bash run-local.sh
+```
+
+**Qué hace el script:**
+- Inicia PostgreSQL local en Docker como base de datos mock (puerto 5432)
+- Levanta el backend en `http://localhost:8080`
+- Levanta el frontend en `http://localhost:3000`
+- Abre automáticamente la interfaz de Cypress para ejecutar tests E2E
+- Maneja la limpieza automática al presionar Ctrl+C
+
+**Notas:**
+- No modifica el setup de docker-compose ni las pipelines de CI/CD
+- La base de datos "mock" es PostgreSQL en Docker para facilitar el desarrollo, sin datos iniciales complejos
+- Si solo necesitas la base de datos, ejecuta `./run-local-db.sh`
+- Para detener todo, presiona Ctrl+C en la terminal donde corre el script
 
 ### Opción 2: Ejecución con Scripts
 
@@ -610,6 +642,8 @@ tp07-quality/
 │   └── workflows/
 │       └── ci.yml                   # Pipeline CI/CD
 │
+├── run-local-db.sh                 # Script para iniciar DB local
+├── run-local.sh                    # Script para iniciar todo local + Cypress
 ├── sonar-project.properties         # Configuración SonarCloud
 ├── README.md                        # Este archivo
 └── decisiones.md                    # Decisiones técnicas y justificaciones

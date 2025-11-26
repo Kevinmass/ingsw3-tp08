@@ -30,7 +30,13 @@ describe('PostList Component', () => {
   });
 
   test('renderiza la lista de posts correctamente', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockPosts });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockPosts
+    });
 
     render(<PostList currentUserId={1} />);
 
@@ -47,7 +53,13 @@ describe('PostList Component', () => {
   });
 
   test('muestra "No hay posts" cuando la lista está vacía', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: [] });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: []
+    });
 
     render(<PostList currentUserId={1} />);
 
@@ -57,7 +69,13 @@ describe('PostList Component', () => {
   });
 
   test('muestra botón eliminar solo para posts propios', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockPosts });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockPosts
+    });
 
     render(<PostList currentUserId={1} />);
 
@@ -73,9 +91,27 @@ describe('PostList Component', () => {
   });
 
   test('elimina un post cuando se hace click en eliminar', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockPosts });
-    mockedAxios.delete.mockResolvedValueOnce({ data: {} });
-    mockedAxios.get.mockResolvedValueOnce({ data: [] }); // Segunda llamada después de eliminar
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockPosts
+    });
+    mockedAxios.delete.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: {}
+    });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: []
+    }); // Segunda llamada después de eliminar
 
     window.confirm = jest.fn(() => true); // Mock de confirm
 

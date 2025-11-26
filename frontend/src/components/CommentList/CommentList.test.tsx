@@ -30,7 +30,13 @@ describe('CommentList Component', () => {
   });
 
   test('renderiza la lista de comentarios correctamente', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockComments });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockComments
+    });
 
     render(<CommentList postId={1} currentUserId={1} />);
 
@@ -43,7 +49,13 @@ describe('CommentList Component', () => {
   });
 
   test('muestra "No hay comentarios" cuando está vacía', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: [] });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: []
+    });
 
     render(<CommentList postId={1} currentUserId={1} />);
 
@@ -53,7 +65,13 @@ describe('CommentList Component', () => {
   });
 
   test('muestra botón eliminar solo para comentarios propios', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockComments });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockComments
+    });
 
     render(<CommentList postId={1} currentUserId={1} />);
 
@@ -67,8 +85,20 @@ describe('CommentList Component', () => {
   });
 
   test('elimina un comentario cuando se hace click en eliminar', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockComments });
-    mockedAxios.delete.mockResolvedValueOnce({ data: {} });
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockComments
+    });
+    mockedAxios.delete.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: {}
+    });
 
     const mockOnCommentDeleted = jest.fn();
 

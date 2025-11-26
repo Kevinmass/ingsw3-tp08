@@ -40,7 +40,13 @@ describe('authService', () => {
         created_at: '2025-01-01'
       };
 
-      mockedAxios.post.mockResolvedValueOnce({ data: mockUser });
+      mockedAxios.post.mockResolvedValueOnce({
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { url: '' },
+        data: mockUser
+      });
 
       const result = await authService.login({
         email: 'test@example.com',
@@ -91,7 +97,13 @@ describe('authService', () => {
         created_at: '2025-01-01'
       };
 
-      mockedAxios.post.mockResolvedValueOnce({ data: mockUser });
+      mockedAxios.post.mockResolvedValueOnce({
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { url: '' },
+        data: mockUser
+      });
 
       const result = await authService.register({
         email: 'newuser@example.com',

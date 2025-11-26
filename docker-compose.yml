@@ -32,8 +32,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
 
   frontend:
     build:
@@ -47,5 +45,30 @@ services:
     depends_on:
       - backend
 
+  cypress:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.cypress
+    container_name: ingsw3-integrated-cypress
+    working_dir: /e2e
+    volumes:
+      - ./frontend/cypress:/e2e/cypress
+      - ./frontend/cypress.config.ts:/e2e/cypress.config.ts
+      - ./frontend/package.json:/e2e/package.json
+      - ./frontend/package-lock.json:/e2e/package-lock.json
+      - cypress_cache:/root/.cache/Cypress
+      - cypress_screenshots:/e2e/cypress/screenshots
+      - cypress_videos:/e2e/cypress/videos
+    environment:
+      CYPRESS_baseUrl: http://frontend
+      CYPRESS_apiUrl: http://backend:8080/api
+    depends_on:
+      - frontend
+    profiles:
+      - e2e
+
 volumes:
   postgres_data:
+  cypress_cache:
+  cypress_screenshots:
+  cypress_videos:

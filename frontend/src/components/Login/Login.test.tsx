@@ -48,7 +48,13 @@ describe('Login Component', () => {
       created_at: '2025-01-01'
     };
 
-    mockedAxios.post.mockResolvedValueOnce({ data: mockUser });
+    mockedAxios.post.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: mockUser
+    });
 
     render(<Login onLoginSuccess={mockOnLoginSuccess} />);
 
@@ -97,9 +103,13 @@ describe('Login Component', () => {
   });
 
   test('deshabilita el botón mientras está cargando', async () => {
-    mockedAxios.post.mockImplementation(() => 
-      new Promise(resolve => setTimeout(resolve, 100))
-    );
+    mockedAxios.post.mockResolvedValueOnce({
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '' },
+      data: { id: 1, email: 'test@example.com', username: 'testuser', created_at: '2025-01-01' }
+    });
 
     render(<Login onLoginSuccess={mockOnLoginSuccess} />);
 
