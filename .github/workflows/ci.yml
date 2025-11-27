@@ -311,7 +311,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-build
-          path: ./frontend/build/
+          path: ./frontend/
 
       # Normalize owner name to lowercase
       - name: Normalize owner name
