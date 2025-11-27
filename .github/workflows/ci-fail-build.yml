@@ -1,0 +1,394 @@
+name: CI/CD Pipeline - Fail Build
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  backend-tests:
+    name: Backend Tests (Go)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run backend tests with per-package coverage
+        working-directory: ./backend
+        run: |
+          go mod download
+          go build ./...
+
+          # Services coverage
+          go test ./tests/services/... -v -cover -coverpkg=./internal/services/... -coverprofile=services.out
+          echo "📊 Services Coverage:"
+          go tool cover -func=services.out | grep total
+
+          # Handlers coverage
+          go test ./internal/handlers/... -v -cover -coverpkg=./internal/handlers/... -coverprofile=handlers.out
+          echo "📊 Handlers Coverage:"
+          go tool cover -func=handlers.out | grep total
+
+          # Combined coverage for SonarCloud upload
+          go test ./tests/services/... ./internal/handlers/... -v -cover -coverpkg=./... -coverprofile=coverage.out
+
+      - name: Check backend coverage thresholds
+        working-directory: ./backend
+        run: |
+          # Check services coverage
+          SERVICES_COVERAGE=$(go tool cover -func=services.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Services coverage: $SERVICES_COVERAGE%"
+          if (( $(echo "$SERVICES_COVERAGE < 80" | bc -l) )); then
+            echo "❌ Services coverage $SERVICES_COVERAGE% is below 80%"
+            exit 1
+          fi
+
+          # Check handlers coverage
+          HANDLERS_COVERAGE=$(go tool cover -func=handlers.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Handlers coverage: $HANDLERS_COVERAGE%"
+          if (( $(echo "$HANDLERS_COVERAGE < 45" | bc -l) )); then
+            echo "❌ Handlers coverage $HANDLERS_COVERAGE% is below 45%"
+            exit 1
+          fi
+
+          echo "✅ All coverage thresholds met"
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./backend/coverage.out
+          flags: backend
+          name: backend-coverage
+
+  frontend-tests:
+    name: Frontend Tests (React)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache Node modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run frontend tests with coverage
+        working-directory: ./frontend
+        run: |
+          npm test -- --coverage --watchAll=false
+          echo "📊 Frontend Coverage Report Generated"
+
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run backend tests for coverage
+        working-directory: ./backend
+        run: |
+          go test ./tests/services/... ./internal/handlers/... -v -cover -coverpkg=./... -coverprofile=coverage/coverage.out
+          # Adjust file paths to match sonar.sources (backend/... instead of ingsw3-tp08/...)
+          head -1 coverage/coverage.out > temp_coverage.out
+          tail -n +2 coverage/coverage.out | sed "s|^ingsw3-tp08/|backend/|" >> temp_coverage.out
+          mv temp_coverage.out coverage/coverage.out
+
+      - name: Run frontend tests for coverage
+        working-directory: ./frontend
+        run: npm test -- --coverage --watchAll=false
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  cypress-e2e:
+    name: Cypress E2E Tests
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Start Backend
+        working-directory: ./backend
+        run: |
+          go run cmd/api/main.go &
+          echo $! > backend.pid
+          sleep 5
+        env:
+          PORT: 8080
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: frontend
+          build: npm run build
+          start: npm start
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 120
+          browser: chrome
+          spec: cypress/e2e/blog/*.cy.js
+
+      - name: Stop Backend
+        if: always()
+        working-directory: ./backend
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+            rm backend.pid
+          fi
+
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-videos
+          path: frontend/cypress/videos
+          if-no-files-found: ignore
+
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    needs: backend-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build backend
+        working-directory: ./backend
+        run: |
+          go build -o app cmd/api/main.go
+          echo "✅ Backend build successful"
+
+      - name: Force failure in build stage
+        run: |
+          echo "❌ Forcing pipeline failure in build stage"
+          exit 1
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: frontend-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache Node modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: |
+          npm run build
+          echo "✅ Frontend build successful"
+
+  docker-build-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, frontend-build, backend-build]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Normalize owner name to lowercase
+      - name: Normalize owner name
+        id: owner
+        run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set tag
+        id: tag
+        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/ingsw3-tp7-tp8-back:${{ env.TAG }}
+            ghcr.io/${{ env.OWNER_LC }}/ingsw3-tp7-tp8-back:latest
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/ingsw3-tp7-tp8-front:${{ env.TAG }}
+            ghcr.io/${{ env.OWNER_LC }}/ingsw3-tp7-tp8-front:latest
+
+  deploy-qa:
+    name: Deploy QA (Back + Front) to Render
+    runs-on: ubuntu-latest
+    needs: [quality-gate, docker-build-push]
+
+    steps:
+      - name: Trigger backend QA deploy
+        run: |
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_QA_BACK_ID }}/deploys \
+          -H 'accept: application/json' \
+          -H 'authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
+          -H 'content-type: application/json' \
+          -d '{}'
+
+      - name: Trigger frontend QA deploy
+        run: |
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_QA_FRONT_ID }}/deploys \
+          -H 'accept: application/json' \
+          -H 'authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
+          -H 'content-type: application/json' \
+          -d '{}'
+
+  deploy-prod:
+    name: Deploy PROD (Back + Front) to Render - REQUIRES MANUAL APPROVAL
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    needs: deploy-qa
+
+    steps:
+      - name: Waiting for Production Approval
+        run: echo "Pipeline paused. Requires manual approval from environment reviewers."
+
+      - name: Deploy Backend to Production
+        run: |
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_PROD_BACK_ID }}/deploys \
+          -H 'accept: application/json' \
+          -H 'authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
+          -H 'content-type: application/json' \
+          -d '{}'
+
+      - name: Deploy Frontend to Production
+        run: |
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_PROD_FRONT_ID }}/deploys \
+          -H 'accept: application/json' \
+          -H 'authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
+          -H 'content-type: application/json' \
+          -d '{}'
+
+      - name: Production Deployment Complete
+        run: echo "Production deployment successful!"
+
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, backend-build, frontend-build, cypress-e2e, sonarcloud]
+
+    steps:
+      - name: Quality Gate Results
+        run: |
+          echo "📊 TP07 + TP08 Integrated - Quality Gates Summary"
+          echo "=========================================================="
+          echo "✅ Backend Tests: Passed"
+          echo "✅ Frontend Tests: Passed"
+          echo "✅ Backend Build: Successful"
+          echo "✅ Frontend Build: Successful"
+          echo "✅ Cypress E2E Tests: Passed"
+          echo "✅ SonarCloud Analysis: Completed"
+          echo "=========================================================="
+          echo "🎯 All quality gates passed! Ready for deployment."
