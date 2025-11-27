@@ -240,18 +240,11 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Build backend binary
+      - name: Build backend
         working-directory: ./backend
         run: |
-          go build -ldflags="-w -s" -o main cmd/api/main.go
-          echo "✅ Backend binary built successfully"
-
-      - name: Upload backend binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-binary
-          path: ./backend/main
-          retention-days: 1
+          go build -o app cmd/api/main.go
+          echo "✅ Backend build successful"
 
   frontend-build:
     name: Frontend Build
@@ -285,13 +278,6 @@ jobs:
           npm run build
           echo "✅ Frontend build successful"
 
-      - name: Upload frontend build
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend/build/
-          retention-days: 1
-
   docker-build-push:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
@@ -300,18 +286,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Download backend binary
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-binary
-          path: ./backend/
-
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend/
 
       # Normalize owner name to lowercase
       - name: Normalize owner name
