@@ -5,7 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build artifacts
-# build/  # Removed: needed for CI Docker builds with pre-built artifacts
+build/
 dist/
 coverage/
 
