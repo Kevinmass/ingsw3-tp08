@@ -1,4 +1,0 @@
-2025/11/25 21:31:37 Base de datos PostgreSQL inicializada correctamente
-2025/11/25 21:31:37 🚀 Servidor corriendo en http://localhost:8080
-2025/11/25 21:31:37 Error al iniciar el servidor:listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
-exit status 1

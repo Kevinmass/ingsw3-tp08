@@ -69,7 +69,13 @@ describe('postService', () => {
     describe('getPostById', () => {
         test('obtiene un post por ID correctamente', async () => {
             const mockPost = { id: 1, title: 'Post 1', content: 'Content 1', user_id: 1, username: 'user1', created_at: '2024-01-01' };
-            mockedAxios.get.mockResolvedValueOnce({ data: mockPost });
+            mockedAxios.get.mockResolvedValueOnce({
+                status: 200,
+                statusText: 'OK',
+                headers: {},
+                config: { url: '' },
+                data: mockPost
+            });
 
             const result = await postService.getPostById(1);
 
@@ -96,7 +102,13 @@ describe('postService', () => {
         test('crea un post correctamente', async () => {
             const newPost = { title: 'New Post', content: 'New Content' };
             const mockResponse = { id: 1, ...newPost, user_id: 1, username: 'user1', created_at: '2024-01-01' };
-            mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
+            mockedAxios.post.mockResolvedValueOnce({
+                status: 201,
+                statusText: 'Created',
+                headers: {},
+                config: { url: '' },
+                data: mockResponse
+            });
 
             const result = await postService.createPost(newPost, 1);
 
@@ -111,7 +123,13 @@ describe('postService', () => {
 
     describe('deletePost', () => {
         test('elimina un post correctamente', async () => {
-            mockedAxios.delete.mockResolvedValueOnce({ data: {} });
+            mockedAxios.delete.mockResolvedValueOnce({
+                status: 204,
+                statusText: 'No Content',
+                headers: {},
+                config: { url: '' },
+                data: {}
+            });
 
             await postService.deletePost(1, 1);
 
@@ -133,7 +151,13 @@ describe('postService', () => {
                 content: 'Great post!',
                 created_at: '2024-01-01'
             };
-            mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
+            mockedAxios.post.mockResolvedValueOnce({
+                status: 201,
+                statusText: 'Created',
+                headers: {},
+                config: { url: '' },
+                data: mockResponse
+            });
 
             const result = await postService.createComment(1, comment, 1);
 
@@ -152,7 +176,13 @@ describe('postService', () => {
                 { id: 1, post_id: 1, user_id: 1, username: 'user1', content: 'Comment 1', created_at: '2024-01-01' },
                 { id: 2, post_id: 1, user_id: 2, username: 'user2', content: 'Comment 2', created_at: '2024-01-02' }
             ];
-            mockedAxios.get.mockResolvedValueOnce({ data: mockComments });
+            mockedAxios.get.mockResolvedValueOnce({
+                status: 200,
+                statusText: 'OK',
+                headers: {},
+                config: { url: '' },
+                data: mockComments
+            });
 
             const result = await postService.getComments(1);
 
@@ -168,7 +198,13 @@ describe('deleteComment', () => {
     });
 
     test('elimina un comentario correctamente', async () => {
-        mockedAxios.delete.mockResolvedValueOnce({ data: {} });
+        mockedAxios.delete.mockResolvedValueOnce({
+            status: 204,
+            statusText: 'No Content',
+            headers: {},
+            config: { url: '' },
+            data: {}
+        });
 
         await deleteComment(1, 5, 1);
 

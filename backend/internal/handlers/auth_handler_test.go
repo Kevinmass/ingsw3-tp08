@@ -71,8 +71,9 @@ func TestAuthHandler_Register_InvalidJSON(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, "JSON inválido", response["error"])
 
 	mockAuthService.AssertNotCalled(t, "Register", mock.Anything)
@@ -167,8 +168,9 @@ func TestAuthHandler_Login_InvalidJSON(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, "JSON inválido", response["error"])
 
 	mockAuthService.AssertNotCalled(t, "Login", mock.Anything)
@@ -199,8 +201,9 @@ func TestAuthHandler_Login_ServiceError(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, assert.AnError.Error(), response["error"])
 
 	mockAuthService.AssertExpectations(t)

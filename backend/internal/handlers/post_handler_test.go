@@ -76,8 +76,9 @@ func TestPostHandler_CreatePost_InvalidJSON(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, ErrInvalidJSON, response["error"])
 
 	mockPostService.AssertNotCalled(t, "CreatePost", mock.Anything, mock.Anything)
@@ -168,8 +169,9 @@ func TestPostHandler_GetAllPosts_Success(t *testing.T) {
 	mockPostService.AssertExpectations(t)
 
 	var response []*models.Post
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Len(t, response, 2)
 	assert.Equal(t, "Post 1", response[0].Title)
 }
@@ -217,8 +219,9 @@ func TestPostHandler_GetPostByID_Success(t *testing.T) {
 	mockPostService.AssertExpectations(t)
 
 	var response models.Post
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, expectedPost.ID, response.ID)
 }
 
@@ -408,8 +411,9 @@ func TestPostHandler_GetComments_Success(t *testing.T) {
 	mockPostService.AssertExpectations(t)
 
 	var response []*models.Comment
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Len(t, response, 2)
 }
 
@@ -455,8 +459,9 @@ func TestPostHandler_DeleteComment_Success(t *testing.T) {
 	mockPostService.AssertExpectations(t)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, "Comentario eliminado", response["message"])
 }
 
@@ -475,8 +480,9 @@ func TestPostHandler_DeleteComment_InvalidPostID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, "Post ID inválido", response["error"])
 
 	mockPostService.AssertNotCalled(t, "DeleteComment", mock.Anything, mock.Anything, mock.Anything)
@@ -498,8 +504,9 @@ func TestPostHandler_DeleteComment_InvalidCommentID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, "Comment ID inválido", response["error"])
 
 	mockPostService.AssertNotCalled(t, "DeleteComment", mock.Anything, mock.Anything, mock.Anything)
@@ -546,8 +553,9 @@ func TestPostHandler_DeleteComment_InvalidUserID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	assert.Equal(t, ErrInvalidUserID, response["error"])
 
 	mockPostService.AssertNotCalled(t, "DeleteComment", mock.Anything, mock.Anything, mock.Anything)
